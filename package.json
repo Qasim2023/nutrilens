@@ -1,0 +1,30 @@
+{
+  "name": "nutrilens",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI food nutrition breakdown — attach a photo or describe a meal, get calories, macros, micros and a health score.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "keywords": [
+    "nutrition",
+    "ai",
+    "vision",
+    "calories",
+    "macros"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.3.289"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5"
+  }
+}

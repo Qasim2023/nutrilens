@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="emerald">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NutriLens</title>
+<meta name="description" content="Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.">
+<meta name="theme-color" content="#070a0f">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="./public/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./public/icon.svg">
+<link rel="manifest" href="./public/manifest.webmanifest">
+<link rel="stylesheet" href="./src/styles.css">
+<meta property="og:title" content="NutriLens">
+<meta property="og:description" content="Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.">
+<meta property="og:type" content="website">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#04140e" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/><circle cx="12" cy="12" r="2.6" fill="#04140e" stroke="none"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">NutriLens</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="mic-btn" type="button" aria-label="Describe food by voice" title="Voice input"></button>
+      <button class="icon-btn" id="history-btn" type="button" aria-label="Open Previous analyses" title="Previous analyses and diary meals" aria-expanded="false" aria-controls="meal-library"></button>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme"></button>
+      <button class="btn btn-sm" id="settings-btn" type="button" title="Endpoint, model and appearance">
+        <span class="icon-slot"></span> Settings
+      </button>
+    </div>
+  </header>
+
+  <nav class="view-nav" aria-label="App sections">
+    <button class="view-button" type="button" id="view-analysis" aria-pressed="true" aria-controls="analysis-view">Analyse food</button>
+    <button class="view-button" type="button" id="view-diary" aria-pressed="false" aria-controls="diary-panel"><span class="icon-slot" id="diary-nav-icon"></span> Daily food diary <span class="diary-nav-total" id="diary-today-total">0 kcal today</span></button>
+  </nav>
+  <div id="analysis-view">
+  <div class="analysis-library-toolbar"><button class="btn btn-sm" type="button" id="meal-library-toggle" aria-expanded="false" aria-controls="meal-library"><span class="icon-slot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span> Previous analyses &amp; meals</button><button class="btn btn-ghost btn-sm" type="button" id="choose-diary-meal">Choose a diary meal</button><span class="library-toolbar-note">Revisit saved results or analyse a logged food</span></div>
+  <section class="hero">
+    <h1>Know exactly what's <span class="grad">on your plate</span></h1>
+    <p>Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.</p>
+    <div class="hero-chips">
+      <span class="chip"><span class="icon-slot"></span> Photo or text</span>
+      <span class="chip"><span class="icon-slot"></span> Bring your own API</span>
+      <span class="chip"><span class="icon-slot"></span> Macros &amp; micros</span>
+      <span class="chip"><span class="icon-slot"></span> Export &amp; print</span>
+    </div>
+  </section>
+
+  <section class="composer" id="composer">
+    <div class="composer-inner">
+      <div id="analysis-origin" class="analysis-origin" hidden></div>
+      <div id="preview-slot"></div>
+      <div id="attachments-slot" aria-live="polite"></div>
+      <textarea id="input" rows="2" placeholder="Describe your food… e.g. “two slices of pepperoni pizza and a coke”, or attach a photo or recipe file." aria-label="Food description"></textarea>
+      <div class="composer-bar">
+        <button class="tool" id="photo-btn" type="button"><span class="icon-slot"></span> Photo</button>
+        <input type="file" id="file-input" accept="image/*" hidden>
+        <button class="tool" id="attach-btn" type="button" title="Attach recipe files"><span class="icon-slot"></span> Attach files</button>
+        <input type="file" id="attachment-input" accept=".pdf,.docx,.txt,.md,.markdown,.csv,.tsv,.json" multiple hidden>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost btn-sm" id="cancel-btn" type="button" hidden>Cancel</button>
+        <button class="btn btn-primary send-btn" id="send-btn" type="button">
+          <span class="send-label">Analyse</span>
+          <span class="icon-slot"></span>
+        </button>
+      </div>
+    </div>
+    <div class="example-row">
+      <span class="label">Try:</span>
+      <button class="chip" type="button" data-example="Grilled chicken breast with a cup of white rice and steamed broccoli">Chicken &amp; rice</button>
+      <button class="chip" type="button" data-example="A large latte with oat milk and a blueberry muffin">Latte &amp; muffin</button>
+      <button class="chip" type="button" data-example="Two slices of pepperoni pizza and a can of coke">Pizza &amp; coke</button>
+      <button class="chip" type="button" data-example="Salmon nigiri, 8 pieces, with soy sauce and edamame">Salmon sushi</button>
+    </div>
+  </section>
+
+  <div class="composer-hint"><span>Recipes: PDF, DOCX, TXT, Markdown, CSV or JSON · up to 5 files, 5 MB each</span><span><kbd>Enter</kbd> to analyse · <kbd>Shift+Enter</kbd> for a new line</span></div>
+  <div id="saved-analysis-banner" class="saved-analysis-banner" hidden></div>
+  <section id="result" aria-live="polite"></section>
+  <div id="history-save-status" class="history-save-status" role="status" aria-live="polite" hidden></div>
+
+
+
+  </div>
+
+  <section id="diary-panel" aria-labelledby="diary-heading" hidden>
+    <div class="diary-heading"><div><span class="diary-eyebrow">A little clarity, every day</span><h1 id="diary-heading">Daily food diary</h1><p>Log what you ate. Every entry adds to your daily calorie total.</p></div></div>
+    <div class="diary-datebar">
+      <div class="diary-date-controls">
+        <button class="icon-btn" id="diary-prev" type="button" aria-label="Previous diary day"><span class="icon-slot">‹</span></button>
+        <label class="sr-only" for="diary-date">Diary date</label><input class="input" type="date" id="diary-date" min="1900-01-01" max="2200-12-31">
+        <button class="icon-btn" id="diary-next" type="button" aria-label="Next diary day"><span class="icon-slot">›</span></button>
+        <button class="btn btn-sm" id="diary-today" type="button">Today</button>
+      </div>
+      <span id="diary-day-label"></span>
+    </div>
+    <div id="diary-message" class="diary-warning" role="alert" hidden></div>
+    <div class="diary-grid">
+      <div class="card diary-overview">
+        <div class="diary-summary-label">Total calories consumed</div>
+        <div class="diary-daily-total" aria-live="polite" aria-atomic="true"><span id="diary-total">0</span><small>kcal</small></div>
+        <span id="diary-count" class="diary-count">0 entries logged</span>
+        <div class="diary-meal-totals" id="diary-meal-totals"></div>
+        <p class="diary-local-note">Saved on this device. Only food descriptions needing an AI estimate are sent to your provider.</p>
+      </div>
+      <div class="card diary-add-card">
+        <h2>Add food or calories</h2><p>Describe your food and leave calories blank for an AI estimate. Enter calories yourself to skip AI.</p>
+        <div class="diary-draft-note" id="diary-draft-note" hidden></div>
+        <div class="diary-estimating" id="diary-estimating" role="status" aria-live="polite" hidden><span class="spinner"></span><span id="diary-estimate-status">Estimating calories…</span><button class="btn btn-sm btn-ghost" id="diary-cancel-estimate" type="button">Cancel estimate</button></div>
+        <form id="diary-form">
+          <div class="field"><label for="diary-food">Food / meal <span class="optional">(optional)</span></label><input class="input" id="diary-food" type="text" maxlength="160" placeholder="e.g. Oatmeal and a banana" autocomplete="off"></div>
+          <div class="diary-form-row">
+            <div class="field"><label for="diary-calories">Calories eaten (kcal) <span class="optional">(optional)</span></label><input class="input" id="diary-calories" type="number" min="0" max="100000" step="0.1" inputmode="decimal" placeholder="123" aria-describedby="diary-calorie-help"></div>
+            <div class="field"><label for="diary-meal">Meal category</label><select class="select" id="diary-meal"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack">Snacks</option><option value="other" selected>Other</option></select></div>
+          </div>
+          <p class="diary-calorie-help" id="diary-calorie-help">Include quantities for better estimates, e.g. “2 eggs and 1 slice of toast”. Blank calories use your configured AI when you press Add entry.</p>
+          <div class="diary-form-actions"><button class="btn btn-primary" type="submit" id="diary-save">Add entry</button><button class="btn btn-ghost" type="button" id="diary-cancel-edit" hidden>Cancel</button><button class="btn btn-ghost" type="button" id="diary-analyse-food">Analyse a food instead</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="card diary-log-card">
+      <div class="diary-log-head"><h2>Foods eaten</h2><button class="btn btn-ghost btn-sm btn-danger" id="diary-clear" type="button" disabled>Clear this day</button></div>
+      <div id="diary-entries"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    Your key is stored in this browser. The optional local relay forwards requests only to your chosen endpoint and never logs or saves keys.<br>
+    Estimates are for general information and are not medical or dietary advice. <kbd>Enter</kbd> to analyse · <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line.
+  </footer>
+</div>
+<div id="meal-library-scrim" class="meal-library-scrim" hidden></div>
+<aside id="meal-library" class="meal-library" role="dialog" aria-modal="true" aria-labelledby="meal-library-heading" hidden inert>
+  <div class="meal-library-head"><div><span class="library-eyebrow">Your nutrition library</span><h2 id="meal-library-heading">Meals &amp; analyses</h2></div><button class="icon-btn" type="button" id="meal-library-close" aria-label="Close meal library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+  <div class="meal-library-tabs"><button class="btn btn-sm" id="library-tab-history" type="button" aria-pressed="true">Previous analyses <span id="library-history-count">0</span></button><button class="btn btn-sm" id="library-tab-diary" type="button" aria-pressed="false">Diary meals <span id="library-diary-count">0</span></button></div>
+  <div class="meal-library-tools"><p id="meal-library-intro"></p><label class="sr-only" for="meal-library-search">Search meals</label><input class="input" id="meal-library-search" type="search" placeholder="Search previous analyses…" autocomplete="off"><span id="meal-library-count" class="library-count"></span><div class="diary-warning" id="meal-library-error" role="alert" hidden></div></div>
+  <div class="meal-library-scroll"><div id="meal-library-list"></div><button class="btn btn-sm" id="meal-library-more" type="button" hidden>Show more meals</button></div>
+  <div class="meal-library-footer"><div class="library-clear-actions"><button class="btn btn-sm library-clear-all" id="meal-library-clear-all" type="button" aria-describedby="meal-library-clear-note" disabled>Delete all analyses</button><p id="meal-library-clear-note">Deletes every saved analysis, not just search results. Diary meals are kept. Cannot be undone.</p></div><div class="library-backup-actions"><button class="btn btn-sm" id="meal-library-backup" type="button">Download history backup</button><button class="btn btn-ghost btn-sm" id="meal-library-import" type="button">Restore backup</button><input type="file" id="meal-library-import-file" accept=".json,application/json" hidden></div><p>Saved on this browser with no automatic expiry. Clearing site data removes local history; keep a private backup. Diary entries are kept separately.</p></div>
+</aside>
+
+<!-- ============================ Settings drawer ============================ -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Settings" role="dialog" aria-modal="true" inert>
+  <div class="drawer-head">
+    <h2>Settings</h2>
+    <button class="icon-btn" id="close-drawer" type="button" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label for="set-language">Language</label>
+      <div class="desc" id="language-help">Choose the app and AI response language. Saved automatically.</div>
+      <select class="select" id="set-language" aria-describedby="language-help" data-i18n-skip></select>
+    </div>
+
+    <div class="field">
+      <label for="set-provider">Provider preset</label>
+      <div class="desc">Pick a known provider or “Custom” for any OpenAI-compatible API.</div>
+      <select class="select" id="set-provider">
+        <option value="wikivibe">WikiVibe (your endpoint)</option>
+        <option value="openai">OpenAI</option>
+        <option value="openrouter">OpenRouter</option>
+        <option value="groq">Groq</option>
+        <option value="together">Together AI</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="mistral">Mistral</option>
+        <option value="xai">xAI (Grok)</option>
+        <option value="ollama">Ollama (local)</option>
+        <option value="lmstudio">LM Studio (local)</option>
+        <option value="azure">Azure OpenAI</option>
+        <option value="custom">Custom endpoint</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="set-baseurl">API base URL</label>
+      <div class="desc">Use your provider’s base URL or a full /chat/completions or /responses URL. Settings save automatically.</div>
+      <input class="input" id="set-baseurl" type="url" placeholder="https://api.wikivibe.ru/v1" spellcheck="false" autocomplete="off">
+      <div class="status-line" id="endpoint-preview" aria-live="polite"></div>
+    </div>
+    <div class="field">
+      <label for="set-apiformat">API format</label>
+      <select class="select" id="set-apiformat">
+        <option value="auto">Auto — Chat Completions, then Responses if required</option>
+        <option value="chat">Chat Completions</option>
+        <option value="responses">Responses API</option>
+      </select>
+      <label for="set-transport" style="margin-top:12px">Connection method</label>
+      <select class="select" id="set-transport">
+        <option value="relay">Local relay — avoids browser CORS blocks</option>
+        <option value="direct">Direct browser requests</option>
+      </select>
+      <div class="desc" style="margin-top:8px">The local relay forwards your key and food only to your configured endpoint. It does not log or store them. Static hosting requires Direct mode.</div>
+      <div class="desc" id="provider-hint"></div>
+    </div>
+
+    <div class="field">
+      <label for="set-model">Model</label>
+      <div class="desc">Use a vision-capable model for photo analysis.</div>
+      <input class="input" id="set-model" list="model-options" placeholder="Fetch models or enter your exact model ID" spellcheck="false" autocomplete="off">
+      <select class="select" id="available-models" aria-label="Available models" hidden style="margin-top:8px"></select>
+      <datalist id="model-options"></datalist>
+      <div class="key-row" style="margin-top:8px">
+        <button class="btn btn-sm" id="models-btn" type="button"><span class="icon-slot"></span> Fetch available models</button>
+      </div>
+      <div class="status-line" id="models-status"></div>
+    </div>
+
+    <div class="field">
+      <label for="set-apikey">API key</label>
+      <div class="desc">Stored in this browser (localStorage). Requests use your key only for the chosen endpoint, directly or through your local relay.</div>
+      <div class="key-row">
+        <input class="input" id="set-apikey" type="password" placeholder="sk-…" spellcheck="false" autocomplete="off">
+        <button class="icon-btn" id="set-keyvisible" type="button" role="switch" aria-checked="false" aria-label="Show API key" title="Show / hide key"><span class="icon-slot"></span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Authentication style</label>
+      <div class="desc">How the key is attached to each request.</div>
+      <div class="segmented" id="auth-seg">
+        <button type="button" data-auth="bearer">Bearer token</button>
+        <button type="button" data-auth="api-key">api-key header</button>
+        <button type="button" data-auth="none">No key</button>
+      </div>
+    </div>
+
+    <details class="accordion" style="margin-bottom:20px">
+      <summary>Advanced request options</summary>
+      <div class="acc-body">
+        <div class="field" style="margin-top:12px">
+          <label for="set-keyheader">Custom auth header name</label>
+          <input class="input" id="set-keyheader" placeholder="Authorization" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="set-extra">Extra headers</label>
+          <div class="desc">One per line, <code>Name: value</code>.</div>
+          <textarea class="textarea" id="set-extra" rows="2" placeholder="X-Custom-Header: value" spellcheck="false"></textarea>
+        </div>
+        <div class="field">
+          <label for="set-temperature">Temperature — <span id="temperature-out">0.2</span></label>
+          <div class="desc">Lower is more consistent. 0–0.4 is best for nutrition data.</div>
+          <input class="input" id="set-temperature" type="range" min="0" max="1" step="0.1" value="0.2" style="padding:0">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label for="set-maxtokens">Max response tokens</label>
+          <input class="input" id="set-maxtokens" type="number" min="256" max="32000" step="128" value="4096">
+        </div>
+      </div>
+    </details>
+
+    <div class="field">
+      <label>Connection test</label>
+      <div class="desc">Sends one tiny request to confirm the endpoint, key and model all work.</div>
+      <button class="btn" id="test-btn" type="button"><span class="icon-slot"></span> Test connection</button>
+      <div class="status-line" id="test-status"></div>
+    </div>
+
+    <hr class="hr">
+
+    <div class="field">
+      <label>Appearance</label>
+      <div class="segmented" id="theme-seg" style="margin-bottom:12px">
+        <button type="button" data-theme-pick="dark">Dark</button>
+        <button type="button" data-theme-pick="light">Light</button>
+      </div>
+      <div class="swatches" id="accent-row" role="radiogroup" aria-label="Accent colour">
+        <button class="swatch" type="button" role="radio" aria-checked="true" data-accent-pick="emerald" title="Emerald" style="background:#34d399"></button>
+        <button class="swatch" type="button" role="radio" aria-checked="false" data-accent-pick="sky" title="Sky" style="background:#38bdf8"></button>
+        <button class="swatch" type="button" role="radio" aria-checked="false" data-accent-pick="violet" title="Violet" style="background:#a78bfa"></button>
+        <button class="swatch" type="button" role="radio" aria-checked="false" data-accent-pick="amber" title="Amber" style="background:#fbbf24"></button>
+        <button class="swatch" type="button" role="radio" aria-checked="false" data-accent-pick="rose" title="Rose" style="background:#fb7185"></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Preferences</label>
+      <div class="toggle-row">
+        <div class="t-label">Demo mode<small>Only sample data. Does not analyse photos or use your API.</small></div>
+        <button class="toggle" id="set-demo" type="button" role="switch" aria-checked="false" aria-label="Demo mode"></button>
+      </div>
+      <div class="toggle-row">
+        <div class="t-label">Analyse immediately<small>Run as soon as a photo is attached.</small></div>
+        <button class="toggle" id="set-autanalyze" type="button" role="switch" aria-checked="true" aria-label="Auto analyse"></button>
+      </div>
+      <div class="toggle-row">
+        <div class="t-label">Compress photos<small>Downscale to 1280 px before uploading — faster and cheaper.</small></div>
+        <button class="toggle" id="set-compress" type="button" role="switch" aria-checked="true" aria-label="Compress photos"></button>
+      </div>
+      <div class="toggle-row">
+        <div class="t-label">Structured JSON mode<small>Ask the model to force JSON output where supported.</small></div>
+        <button class="toggle" id="set-jsonmode" type="button" role="switch" aria-checked="true" aria-label="JSON mode"></button>
+      </div>
+      <div class="desc">Full analyses save automatically to Previous analyses, with no age or entry limit. Browser data stays on this device; use the library backup for long-term safekeeping.</div>
+    </div>
+
+    <div class="field">
+      <label>Result sections</label>
+      <div class="toggle-row">
+        <div class="t-label">Micronutrients<small>Vitamins and minerals grid.</small></div>
+        <button class="toggle" id="set-micros" type="button" role="switch" aria-checked="true" aria-label="Show micronutrients"></button>
+      </div>
+      <div class="toggle-row">
+        <div class="t-label">Item breakdown<small>Per-component table.</small></div>
+        <button class="toggle" id="set-items" type="button" role="switch" aria-checked="true" aria-label="Show item breakdown"></button>
+      </div>
+      <div class="toggle-row">
+        <div class="t-label">Smart swaps<small>Suggested healthier substitutions.</small></div>
+        <button class="toggle" id="set-swaps" type="button" role="switch" aria-checked="true" aria-label="Show smart swaps"></button>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0">
+      <button class="btn btn-ghost btn-danger" id="reset-btn" type="button">Reset settings to defaults</button>
+    </div>
+
+  </div>
+</aside>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="icon-sprite" hidden></div>
+
+<script type="module" src="./src/app.js"></script>
+<noscript><div style="padding:40px;text-align:center">NutriLens requires JavaScript to analyse food.</div></noscript>
+</body>
+</html>

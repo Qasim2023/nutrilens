@@ -1,0 +1,35 @@
+✔ green requires four independent matching core-nutrient records and known edible weight (11.9303ms)
+✔ copied data, duplicate pages, unknown provenance and model-supplied status flags do not create independent evidence (0.4842ms)
+✔ matching rejects wrong preparation, incidental ingredients and missing food-defining variants (2.3553ms)
+✔ best-quality central data is selected rather than blindly averaging all values (0.6451ms)
+✔ verified values scale by grams and propagate into totals, micronutrients and exports (12.6258ms)
+✔ missing optional nutrients are not invented and keep explicit lower per-nutrient coverage (8.8358ms)
+✔ fewer than four, network failure and missing local route preserve AI estimates with a red result (5.2728ms)
+✔ a mixed meal is never fully green unless every ingredient independently qualifies (2.8217ms)
+✔ cancellation during source lookup never shows or logs a finished result (2.1554ms)
+✔ bad report shapes or wrong food/weight are rejected instead of accepting fabricated evidence (2.0746ms)
+✔ demo data is always unverified and never calls real sources (0.2274ms)
+✔ both normal analysis and blank-calorie diary estimation run the same real verification step (4.1908ms)
+✔ manual diary changes invalidate evidence, while unchanged estimated entries retain it across reloads (1.0902ms)
+✔ saved analyses preserve verified evidence without storing arbitrary credentials (2.4755ms)
+✔ source/food evidence is escaped and links always point to curated official pages (2.6788ms)
+✔ local route always attempts all four sources, including when one source fails (47.9273ms)
+✔ local route with four real record fixtures returns green; a request cannot inject a source URL (8.7555ms)
+✔ source endpoint blocks foreign origins, missing header, invalid food payloads and private files (50.4448ms)
+✔ Norwegian parser uses correct nutrient units, total sugars and underlying data origins (1.0959ms)
+✔ Canada parser normalizes total to available carbohydrate and deduplicates borrowed origins (0.6522ms)
+✔ CoFID parser combines proximate/mineral tables and never treats trace or missing values as measured zero (46.7117ms)
+✔ Australian parser selects per-100-g sheet, converts kJ and identifies borrowed rather than independent data (26.2449ms)
+✔ official dataset cache avoids repeat fetches and expires rather than silently verifying stale data (10.6965ms)
+✔ independence is checked for each nutrient, not just the source organisation or core macros (1.5195ms)
+✔ a partial source still contributes its available independent nutrients but cannot establish a complete food match (0.2795ms)
+✔ large analyses verify every ingredient in bounded batches without silently truncating evidence (49.4016ms)
+✔ unchanged verified diary drafts retain evidence when display storage rounds calories to tenths (0.6725ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1404.2767
