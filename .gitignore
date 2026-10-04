@@ -8,3 +8,6 @@ __pycache__/
 .pnpm-store/
 
 .nutrition-cache/
+
+# Generated static deployment; only dist is uploaded by the Pages workflow.
+dist/

@@ -137,3 +137,56 @@ Open **Settings → Language** to choose Norwegian Bokmål, English, Polish, Ger
 ## AI nutrition estimates
 
 Analysis and blank-calorie Diary entries use the configured AI model’s food knowledge and best judgment. The app does not search nutrition websites or cross-check external nutrition databases. Calories, macros and micronutrients remain estimates; check quantities, preparation and portion assumptions. Manual diary calories bypass the AI. Existing saved results and diary meals retain their nutrition values, without source badges or comparison panels.
+
+## Deploy to GitHub Pages
+
+The repository includes `.github/workflows/pages.yml`. It builds a static-only
+`dist/` artifact and deploys it on pushes to `main` or `master`, or when manually
+run from the Actions tab.
+
+1. Commit and push the app files, `scripts/`, `.github/workflows/pages.yml`,
+   `package.json`, `pnpm-lock.yaml`, and tests. Do not commit API keys or `.env`.
+2. In the GitHub repository, open **Settings → Pages** and select
+   **GitHub Actions** as the source.
+3. Push to `main` or use **Actions → Deploy NutriLens to GitHub Pages → Run workflow**.
+4. Open the URL shown by the successful deployment. For the current repository,
+   the default URL is `https://sato2023.github.io/nutrilens/`.
+5. Open the app's Settings and enter your own provider URL, model, and API key.
+
+### Static-hosting behavior
+
+- Relative asset and worker paths support repository subpaths and custom domains.
+- The build sets static mode even on a custom domain and includes `.nojekyll`.
+- PDF and DOCX text extraction runs in browser workers using bundled dependencies;
+  no document-upload backend is needed. Scanned/image-only recipes need a photo.
+- Analysis, Diary, and model discovery call your provider directly. The provider
+  must support HTTPS and CORS, including the headers used by your authentication.
+  GitHub Pages cannot run `server.mjs` or its `/api/relay` endpoint. If the provider
+  blocks browser requests, configure a separately hosted trusted authenticated
+  proxy as the API endpoint; do not put a shared proxy secret in the site.
+- Each user's API key stays in that browser's localStorage and is sent to the
+  configured endpoint. There is no server-side secret storage on the static site.
+  Use a personal restricted key, not a shared production credential.
+- Settings, meal history, and diary data are browser-local, not synced between
+  devices. The Pages origin has separate storage from your local development site.
+- The local Node server still supports relay mode when running `pnpm start`.
+
+### Verify before deployment
+
+```sh
+pnpm install --frozen-lockfile
+pnpm test
+pnpm run build:pages
+```
+
+`tests/pages.test.mjs` covers worker-message isolation, static transport, legacy
+settings migration, and the artifact allowlist. The end-to-end check serves the
+built site under `/nutrition-project/` with no backend and a local mock provider:
+
+```sh
+node tests/pages-ui.mjs /absolute/path/to/playwright /absolute/path/to/browser
+```
+
+Both arguments are optional when Playwright and its Chromium are already installed.
+This checks PDF/DOCX parsing, CORS requests, Analysis, Diary, persistence, and mobile
+layout. It does not send files or API keys to a real AI service.

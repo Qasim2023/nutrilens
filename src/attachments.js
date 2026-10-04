@@ -1,3 +1,5 @@
+import { isStaticHosting } from "./hosting.js";
+
 // Client-side recipe attachment handling. Text files never leave the browser during parsing.
 export const MAX_ATTACHMENTS = 5;
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
@@ -42,6 +44,10 @@ export async function readAttachment(file, extract = extractDocument) {
 }
 
 async function extractDocument(file) {
+  if(isStaticHosting()){
+    const {extractBrowserDocument}=await import('./browser-documents.js');
+    return extractBrowserDocument(file);
+  }
   if (!/^https?:$/.test(location.protocol)) throw new Error('Start the local website server to read PDF or Word attachments.');
   const res = await fetch('/api/attachments', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-NutriLens-Upload': '1' },

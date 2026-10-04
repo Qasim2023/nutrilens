@@ -5,6 +5,7 @@
    ========================================================================== */
 
 import { DEFAULT_BASE_URL, DEFAULT_MODEL } from "./ai.js";
+import { isStaticHosting } from "./hosting.js";
 import { normalizeLanguage } from "./languages.js";
 
 const SETTINGS_KEY = "nutrilens.settings.v1";
@@ -17,7 +18,7 @@ export const defaults = {
   baseUrl: DEFAULT_BASE_URL,
   endpointMode: "auto",
   apiFormat: "auto",
-  transport: "relay",
+  transport: isStaticHosting() ? "direct" : "relay",
   demoMode: false,
   model: DEFAULT_MODEL,
   apiKey: "",
@@ -39,7 +40,7 @@ export const defaults = {
 };
 
 function supportedSettings(stored) {
-  return Object.fromEntries(Object.entries(defaults).map(([key,value])=>[key,key==="language"?normalizeLanguage(stored[key]):Object.hasOwn(stored,key)?stored[key]:value]));
+  return Object.fromEntries(Object.entries(defaults).map(([key,value])=>[key,key==="transport"&&isStaticHosting()?"direct":key==="language"?normalizeLanguage(stored[key]):Object.hasOwn(stored,key)?stored[key]:value]));
 }
 
 export function loadSettings() {
@@ -50,7 +51,7 @@ export function loadSettings() {
     const stored = parsed && typeof parsed === "object" ? parsed : {};
     const settings = supportedSettings(stored);
     if (stored.connectionRevision !== 2) {
-      Object.assign(settings, { provider: 'wikivibe', baseUrl: DEFAULT_BASE_URL, endpointMode: 'auto', apiFormat: 'auto', transport: 'relay', demoMode: false, autoAnalyze: false, connectionRevision: 2 });
+      Object.assign(settings, { provider: 'wikivibe', baseUrl: DEFAULT_BASE_URL, endpointMode: 'auto', apiFormat: 'auto', transport: isStaticHosting() ? 'direct' : 'relay', demoMode: false, autoAnalyze: false, connectionRevision: 2 });
     }
     // Drop retired options and credentials without resetting active provider settings.
     saveSettings(settings);

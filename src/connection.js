@@ -1,3 +1,5 @@
+import { effectiveTransport, isStaticHosting } from "./hosting.js";
+
 // URL handling and transport shared by connection tests, model discovery and analysis.
 export const CUSTOM_ENDPOINT = "https://api.wikivibe.ru/v1";
 
@@ -84,7 +86,7 @@ export function parseEventStream(text) {
 export async function requestJson(settings, url, { method = "POST", body, signal } = {}) {
   const timeout = AbortSignal.timeout(120000);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
-  const useRelay = settings.transport !== "direct" && typeof location !== "undefined" && /^https?:$/.test(location.protocol);
+  const useRelay = effectiveTransport(settings) !== "direct" && typeof location !== "undefined" && /^https?:$/.test(location.protocol);
   let res;
   try {
     res = await fetch(useRelay ? "/api/relay" : url, useRelay ? {
@@ -94,7 +96,7 @@ export async function requestJson(settings, url, { method = "POST", body, signal
   } catch (error) {
     if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
     if (timeout.aborted) throw new Error("The endpoint timed out after 120 seconds. Try another model or a smaller request.");
-    throw new Error("Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");
+    throw new Error(isStaticHosting() ? "Could not connect to the AI provider from this static site. Your HTTPS endpoint must allow browser CORS requests from this site. GitHub Pages cannot run the local relay. Use a CORS-enabled provider or your own trusted authenticated proxy; check the endpoint and network." : "Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");
   }
   const text = await res.text();
   if (!res.ok) {

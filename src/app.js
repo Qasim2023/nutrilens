@@ -2,6 +2,7 @@
    NutriLens — app controller
    ========================================================================== */
 
+import { isStaticHosting } from "./hosting.js";
 import { LANGUAGES, initLocalization, setLanguage, getLocale } from "./i18n.js";
 import { endpointUrl, PRESETS, MODEL_SUGGESTIONS, analyzeFood, testConnection, listModels } from "./ai.js";
 import { defaults, loadSettings, saveSettings, resetSettings, loadSession, saveSession } from "./store.js";
@@ -453,7 +454,10 @@ function syncDrawer() {
   setValue("#set-provider", s.provider);
   setValue("#set-baseurl", s.baseUrl);
   setValue("#set-apiformat", s.apiFormat);
-  setValue("#set-transport", s.transport);
+  setValue("#set-transport", isStaticHosting()?"direct":s.transport);
+  $("#static-hosting-notice").hidden=!isStaticHosting();
+  $("#set-transport").querySelector('option[value="relay"]').disabled=isStaticHosting();
+  $("#set-transport").disabled=isStaticHosting();
   setToggle("#set-demo", s.demoMode);
   $("#temperature-out").textContent = Number(s.temperature).toFixed(1);
   updateEndpointPreview();
@@ -525,6 +529,7 @@ function applyProviderPreset(id) {
 
 function persist() {
   setLanguage(state.settings.language);
+  if(isStaticHosting())state.settings.transport="direct";
   saveSettings(state.settings);
   applyTheme();
   updateEndpointPreview();
