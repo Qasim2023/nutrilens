@@ -1,5 +1,7 @@
+import {renderConfidenceBadge,renderDiaryConfidence} from './diary.js';
+import {confirmDelete} from './delete-confirmation.js';
 import {esc,fmt,ICONS} from './render.js';
-import {loadDiary,DIARY_KEY,MEALS} from './diary-store.js';
+import {loadDiary,DIARY_KEY,MEALS,removeEntry,saveDiary} from './diary-store.js';
 import {clearMealLibrarySource} from './meal-library-store.js';
 
 export function diaryAnalysisSelection(entry) {
@@ -51,10 +53,10 @@ export function initMealLibrary({history,onOpenAnalysis,onChooseDiary,onReanalys
     else host.innerHTML=filtered.slice(0,limit).map(entry=>source==='history'?`<article class="library-meal ${entry.id===activeId?'is-selected':''}">
       <button type="button" class="library-select" data-open-analysis="${esc(entry.id)}" aria-label="View saved analysis: ${esc(entry.dish)}">
         ${entry.thumb?`<img src="${esc(entry.thumb)}" alt="" loading="lazy">`:`<span class="library-food-icon">${ICONS.leaf}</span>`}
-        <span class="library-meal-description"><strong data-i18n-skip>${esc(entry.dish)}</strong><small>${esc(new Date(entry.when).toLocaleString())} · ${fmt(entry.calories,1)} kcal</small><small>${entry.model?`<span data-i18n-skip>${esc(entry.model)}</span>`:'Saved result'}${entry.legacy?' · Imported history':''}</small></span>
+        <span class="library-meal-description"><strong data-i18n-skip>${esc(entry.dish)}</strong><small>${esc(new Date(entry.when).toLocaleString())} · ${fmt(entry.calories,1)} kcal</small>${renderConfidenceBadge(entry.confidence)}<small>${entry.model?`<span data-i18n-skip>${esc(entry.model)}</span>`:'Saved result'}${entry.legacy?' · Imported history':''}</small></span>
       </button>
       <div class="library-meal-actions"><button class="btn btn-sm" type="button" data-open-analysis="${esc(entry.id)}">View full result</button><button class="btn btn-ghost btn-sm" type="button" data-reanalyse="${esc(entry.id)}" aria-label="Analyse again: ${esc(entry.dish)}">Analyse again</button><button class="icon-btn library-delete" type="button" data-remove-analysis="${esc(entry.id)}" aria-label="Delete saved analysis: ${esc(entry.dish)}">${ICONS.trash}</button></div>
-    </article>`:`<article class="library-meal"><button type="button" class="library-select" data-choose-diary="${esc(entry.id)}" aria-label="Select diary meal: ${esc(entry.name)}"><span class="library-food-icon">${ICONS.diary}</span><span class="library-meal-description"><strong data-i18n-skip>${esc(entry.name)}</strong><small>${esc(entry.date)} · ${esc(MEALS.find(([key])=>key===entry.meal)?.[1] || entry.meal)} · ${fmt(entry.calories,1)} logged kcal</small><small>${entry.source==='ai'?'AI estimate':'Manual entry'} · Select to analyse in detail</small></span></button></article>`).join('');
+    </article>`:`<article class="library-meal"><button type="button" class="library-select" data-choose-diary="${esc(entry.id)}" aria-label="Select diary meal: ${esc(entry.name)}"><span class="library-food-icon">${ICONS.diary}</span><span class="library-meal-description"><strong data-i18n-skip>${esc(entry.name)}</strong><small>${esc(entry.date)} · ${esc(MEALS.find(([key])=>key===entry.meal)?.[1] || entry.meal)} · ${fmt(entry.calories,1)} logged kcal</small><small>${entry.source==='ai'?'AI estimate':'Manual entry'} · Select to analyse in detail</small>${renderDiaryConfidence(entry)}</span></button><div class="library-meal-actions"><button class="btn btn-sm" type="button" data-choose-diary="${esc(entry.id)}">Analyse meal</button><button class="icon-btn library-delete" type="button" data-remove-diary="${esc(entry.id)}" aria-label="Delete diary meal: ${esc(entry.name)}" title="Delete diary meal">${ICONS.trash}</button></div></article>`).join('');
     $('#meal-library-more').hidden=filtered.length<=limit;
     // Lock actions while clearing, including restore, row actions and closing.
     for(const control of panel.querySelectorAll('button,input'))control.disabled=clearing;
@@ -73,10 +75,22 @@ export function initMealLibrary({history,onOpenAnalysis,onChooseDiary,onReanalys
     for(const button of host.querySelectorAll('[data-choose-diary]'))button.addEventListener('click',()=>{
       const entry=diaryEntries.find(e=>e.id===button.dataset.chooseDiary);try{diaryAnalysisSelection(entry);close();onChooseDiary(entry);}catch(error){toast(error.message,'error');}
     });
+    for(const button of host.querySelectorAll('[data-remove-diary]'))button.addEventListener('click',async()=>{
+      const entry=diaryEntries.find(e=>e.id===button.dataset.removeDiary);
+      if(!entry || !await confirmDelete({title:'Delete diary meal?',subject:entry.name || 'Calorie entry',detail:fmt(entry.calories,1)+' kcal · '+entry.date,message:'This diary meal will be deleted. Other diary meals and saved analyses will be kept.',confirmLabel:'Delete meal',fallbackFocus:'#meal-library-close'}))return;
+      button.disabled=true;
+      try {
+        const next=removeEntry(loadDiary(),entry.id);
+        saveDiary(next);
+        document.dispatchEvent(new CustomEvent('nutrilens:diary-changed'));
+        await refresh();
+        toast('Diary meal deleted. Daily total updated.','success');
+      } catch(error) { toast(error.message,'error');button.disabled=false; }
+    });
     for(const button of host.querySelectorAll('[data-remove-analysis]'))button.addEventListener('click',async()=>{
       const entry=analyses.find(e=>e.id===button.dataset.removeAnalysis);
-      if(!confirm(`Permanently delete the saved analysis “${entry?.dish || 'this meal'}”? Other analyses and diary entries will be kept.`))return;
-      button.disabled=true;try{await history.remove(button.dataset.removeAnalysis);await refresh();toast('Saved analysis deleted.','success');}catch(error){toast(error.message,'error');button.disabled=false;}
+      if(!entry || !await confirmDelete({title:'Delete saved analysis?',subject:entry.dish || 'Saved result',detail:fmt(entry.calories,1)+' kcal',message:'Other analyses and diary entries will be kept.',confirmLabel:'Delete analysis',fallbackFocus:'#meal-library-close'}))return;
+      button.disabled=true;try{await history.remove(button.dataset.removeAnalysis);await refresh();$('#meal-library-close').focus();toast('Saved analysis deleted.','success');}catch(error){toast(error.message,'error');button.disabled=false;}
     });
   }
   async function refresh() {
@@ -98,10 +112,10 @@ export function initMealLibrary({history,onOpenAnalysis,onChooseDiary,onReanalys
       if(loadFailed[deletingSource])throw new Error('The selected list could not be read. Nothing was deleted. Resolve the storage error and try again.');
       const count=deletingSource==='history'?analyses.length:diaryEntries.length;
       if(!count)return;
-      const warning=deletingSource==='history'
-        ? 'Permanently delete ALL '+count+' saved analyses?\n\nThis deletes every saved analysis, regardless of your search. All diary meals and daily calorie totals will be kept. This cannot be undone. Download a history backup first if you want to keep your analyses.'
-        : 'Permanently delete ALL '+count+' diary meals from every date?\n\nThis deletes every diary entry, regardless of your search. All saved analyses will be kept. Daily calorie totals will reset. This cannot be undone.';
-      if(!confirm(warning))return;
+      const message=deletingSource==='history'
+        ? 'Every saved analysis will be deleted, including those outside your search. Diary meals and daily calorie totals will be kept. Download a history backup first if needed.'
+        : 'Diary meals from every date will be deleted, including those outside your search. Daily calorie totals will reset. Saved analyses will be kept.';
+      if(!await confirmDelete({title:deletingSource==='history'?'Delete all analyses?':'Delete all diary meals?',subject:count+' '+(deletingSource==='history'?(count===1?'saved analysis':'saved analyses'):(count===1?'diary entry':'diary entries')),subjectIsFood:false,message,confirmLabel:deletingSource==='history'?'Delete all analyses':'Delete all diary meals',fallbackFocus:'#meal-library-close'}))return;
       await clearMealLibrarySource({source:deletingSource,history});
       if(deletingSource==='history')activeId=null;
       $('#meal-library-search').value='';limit=30;
@@ -134,7 +148,7 @@ export function initMealLibrary({history,onOpenAnalysis,onChooseDiary,onReanalys
     try{if(file.size>100*1024*1024)throw new Error('Choose a history backup smaller than 100 MB.');const data=JSON.parse(await file.text());await history.importBackup(data);await refresh();toast('History restored. Existing saved results were kept.','success');}catch(error){toast(error.message,'error');}finally{event.target.value='';}
   });
   document.addEventListener('keydown',event=>{
-    if(!opened)return;
+    if(!opened || document.querySelector('#delete-confirmation[open]'))return;
     if(event.key==='Escape'){event.preventDefault();close();}
     if(event.key==='Tab'){const elements=controls();if(event.shiftKey && document.activeElement===elements[0]){event.preventDefault();elements.at(-1)?.focus();}else if(!event.shiftKey && document.activeElement===elements.at(-1)){event.preventDefault();elements[0]?.focus();}}
   });

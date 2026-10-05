@@ -34,12 +34,17 @@ export function validateCalories(value) {
   return Math.round((number + Number.EPSILON) * 10) / 10;
 }
 
+// Confidence is the model's self-reported 0–1 score, not verified accuracy.
+export function diaryConfidence(value) {
+  return typeof value==='number' && Number.isFinite(value) && value>=0 && value<=1 ? value : null;
+}
+
 export function createEntry(input, { id = crypto.randomUUID(), now = Date.now() } = {}) {
   if (!validDay(input.date)) throw new Error('Choose a valid diary date.');
   if (!MEALS.some(([key])=>key===input.meal)) throw new Error('Choose a meal category.');
   const rawName = String(input.name || '').trim();
   if (rawName.length > 160) throw new Error('Food names must be 160 characters or fewer.');
-  return { id, date: input.date, name: rawName || 'Calorie entry', meal: input.meal, calories: validateCalories(input.calories), source: input.source === 'ai' ? 'ai' : 'manual', nutrients: input.source==='ai' && input.nutrients && typeof input.nutrients==='object' ? Object.fromEntries(['calories','protein_g','carbs_g','fat_g','fiber_g','sugar_g','sodium_mg'].filter(k=>input.nutrients[k]===null||typeof input.nutrients[k]==='number'&&Number.isFinite(input.nutrients[k])&&input.nutrients[k]>=0).map(k=>[k,input.nutrients[k]])) : null, estimateNotes: input.source === 'ai' && typeof input.estimateNotes === 'string' ? cleanEstimateNotes(input.estimateNotes).slice(0,800) : '', createdAt: now, updatedAt: now };
+  return { id, date: input.date, name: rawName || 'Calorie entry', meal: input.meal, calories: validateCalories(input.calories), source: input.source === 'ai' ? 'ai' : 'manual', confidence: input.source==='ai' ? diaryConfidence(input.confidence) : null, nutrients: input.source==='ai' && input.nutrients && typeof input.nutrients==='object' ? Object.fromEntries(['calories','protein_g','carbs_g','fat_g','fiber_g','sugar_g','sodium_mg'].filter(k=>input.nutrients[k]===null||typeof input.nutrients[k]==='number'&&Number.isFinite(input.nutrients[k])&&input.nutrients[k]>=0).map(k=>[k,input.nutrients[k]])) : null, estimateNotes: input.source === 'ai' && typeof input.estimateNotes === 'string' ? cleanEstimateNotes(input.estimateNotes).slice(0,800) : '', createdAt: now, updatedAt: now };
 }
 
 export function dayEntries(entries, date) {

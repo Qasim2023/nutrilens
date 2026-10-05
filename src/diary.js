@@ -1,9 +1,22 @@
+import {confirmDelete} from './delete-confirmation.js';
 import { getLocale } from "./i18n.js";
 import { esc, fmt, ICONS } from './render.js';
-import { DIARY_KEY, MEALS, localDay, validDay, shiftDay, createEntry, dayEntries, daySummary, updateEntry, removeEntry, loadDiary, saveDiary } from './diary-store.js';
+import { DIARY_KEY, MEALS, diaryConfidence, localDay, validDay, shiftDay, createEntry, dayEntries, daySummary, updateEntry, removeEntry, loadDiary, saveDiary } from './diary-store.js';
 
 import { cleanEstimateNotes } from './estimate-notes.js';
 import { resolveDiaryInput } from "./diary-estimate.js";
+
+export function renderConfidenceBadge(value) {
+  const confidence=diaryConfidence(value);
+  const percent=confidence===null?null:Math.round(confidence*100);
+  const level=percent===null?'unavailable':percent>=70?'high':percent>=40?'medium':'low';
+  const label=percent===null?'AI confidence unavailable':percent+'% AI confidence';
+  return `<span class="diary-confidence diary-confidence-${level}">${esc(label)}</span>`;
+}
+
+export function renderDiaryConfidence(entry) {
+  return entry.source==='ai' ? renderConfidenceBadge(entry.confidence) : '';
+}
 
 export function initDiary({ toast, getSettings, onAnalyseEntry }) {
   const $ = selector=>document.querySelector(selector);
@@ -41,7 +54,7 @@ export function initDiary({ toast, getSettings, onAnalyseEntry }) {
     $('#diary-entries').innerHTML=items.length ? items.map(entry=>`<article class="diary-entry" data-diary-entry="${esc(entry.id)}">
       <div class="diary-entry-icon">${ICONS.leaf}</div>
       <div class="diary-entry-description"><strong data-i18n-skip>${esc(entry.name)}</strong><small>${esc(MEALS.find(([key])=>key===entry.meal)[1])} · ${entry.source==='ai'?'AI estimate':'Manual entry'}</small>${entry.nutrients ? `<small>Protein ${fmt(entry.nutrients.protein_g,1)} g · Carbs ${fmt(entry.nutrients.carbs_g,1)} g · Fat ${fmt(entry.nutrients.fat_g,1)} g · Fibre ${fmt(entry.nutrients.fiber_g,1)} g · Sugar ${fmt(entry.nutrients.sugar_g,1)} g · Sodium ${fmt(entry.nutrients.sodium_mg)} mg</small>` : ""}${cleanEstimateNotes(entry.estimateNotes) ? `<details class="diary-estimate-details"><summary>Estimated portion</summary><p data-i18n-skip>${esc(cleanEstimateNotes(entry.estimateNotes))}</p></details>` : ''}</div>
-      <div class="diary-entry-calories">${caloriesLabel(entry.calories)}<small> kcal</small></div>
+      <div class="diary-entry-calories">${caloriesLabel(entry.calories)}<small> kcal</small>${renderDiaryConfidence(entry)}</div>
       <div class="diary-entry-actions"><button class="btn btn-sm diary-detail-button" type="button" data-analyse-diary="${esc(entry.id)}" aria-label="Detailed nutrition for ${esc(entry.name)}">Detailed nutrition</button><button class="icon-btn" type="button" data-edit-entry="${esc(entry.id)}" aria-label="Edit ${esc(entry.name)}" title="Edit entry">${ICONS.edit}</button><button class="icon-btn" type="button" data-remove-entry="${esc(entry.id)}" aria-label="Delete ${esc(entry.name)}" title="Delete entry">${ICONS.trash}</button></div>
     </article>`).join('') : '<div class="diary-empty"><span>'+ICONS.diary+'</span><h3>No foods logged for this day</h3><p>Enter a food and leave calories blank for an AI estimate, add a calorie-only amount, or log an analysed meal.</p></div>';
     $('#diary-clear').disabled=!items.length || blocked || !!pending;
@@ -50,10 +63,10 @@ export function initDiary({ toast, getSettings, onAnalyseEntry }) {
     $('#diary-today').disabled=!!pending || selected===localDay();
     for(const button of document.querySelectorAll('[data-analyse-diary]')) button.addEventListener('click',()=>{if(pending)return;onAnalyseEntry?.(entries.find(entry=>entry.id===button.dataset.analyseDiary));});
     for(const button of document.querySelectorAll('[data-edit-entry]')) button.addEventListener('click',()=>edit(button.dataset.editEntry));
-    for(const button of document.querySelectorAll('[data-remove-entry]')) button.addEventListener('click',()=>{
+    for(const button of document.querySelectorAll('[data-remove-entry]')) button.addEventListener('click',async()=>{
       const item=entries.find(e=>e.id===button.dataset.removeEntry);
-      if(!item || !confirm(`Delete “${item.name}” (${caloriesLabel(item.calories)} kcal) from this day?`)) return;
-      if(commit(removeEntry(entries,item.id))) { if(editing===item.id)resetForm(); toast('Entry deleted. Daily total updated.','success'); }
+      if(!item || !await confirmDelete({title:'Delete diary meal?',subject:item.name,detail:caloriesLabel(item.calories)+' kcal · '+item.date,message:'This meal will be removed from your diary and the daily calorie total will be updated. Your saved analyses will be kept.',confirmLabel:'Delete meal',fallbackFocus:'#diary-food'})) return;
+      if(commit(removeEntry(entries,item.id))) { if(editing===item.id)resetForm(); toast('Entry deleted. Daily total updated.','success'); $('#diary-food').focus(); }
     });
   }
   function commit(next) {
@@ -114,8 +127,10 @@ export function initDiary({ toast, getSettings, onAnalyseEntry }) {
   $('#diary-next').addEventListener('click',()=>{try{changeDate(shiftDay(selected,1));}catch(error){toast(error.message,'error');}});
   $('#diary-today').addEventListener('click',()=>changeDate(localDay()));
   $('#diary-cancel-edit').addEventListener('click',resetForm);
-  $('#diary-clear').addEventListener('click',()=>{
-    if(confirm('Delete all diary entries for '+selected+'? Other days will be kept.') && commit(entries.filter(e=>e.date!==selected))){resetForm();toast('Selected day cleared.','success');}
+  $('#diary-clear').addEventListener('click',async()=>{
+    const day=selected, count=dayEntries(entries,day).length;
+    if(!count || pending || blocked)return;
+    if(await confirmDelete({title:'Clear this day?',subject:count+' '+(count===1?'entry logged':'entries logged'),detail:day,subjectIsFood:false,message:'All meals for this day will be deleted and its calorie total will reset. Other days and saved analyses will be kept.',confirmLabel:'Clear this day',fallbackFocus:'#diary-food'}) && commit(entries.filter(e=>e.date!==day))){resetForm();toast('Selected day cleared.','success');$('#diary-food').focus();}
   });
   $('#view-analysis').addEventListener('click',()=>setView('analysis'));
   $('#view-diary').addEventListener('click',()=>setView('diary'));
@@ -148,7 +163,7 @@ export function initDiary({ toast, getSettings, onAnalyseEntry }) {
       if(result.meta?.demo){toast('Demo estimates cannot be logged as foods you ate. Add a manual calorie entry instead.','error');return;}
       if(blocked){toast('Diary storage is unavailable.','error');return;}
       selected=localDay();resetForm();setView('diary');
-      draft={name:result.dish.slice(0,160),calories:result.total.calories,source:'ai',nutrients:result.total,estimateNotes:result.portion_notes || ''};
+      draft={name:result.dish.slice(0,160),calories:result.total.calories,source:'ai',confidence:diaryConfidence(result.confidence),nutrients:result.total,estimateNotes:result.portion_notes || ''};
       $('#diary-food').value=draft.name;$('#diary-calories').value=draft.calories;
       $('#diary-draft-note').textContent='Prefilled from your AI result. Check the calories for the amount you actually ate (the estimate may cover a whole recipe). Nothing is logged until you press Add entry. Choose another date above if needed.';
       $('#diary-draft-note').hidden=false;$('#diary-cancel-edit').hidden=false;

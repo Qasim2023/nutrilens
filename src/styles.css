@@ -487,3 +487,68 @@ html[dir="rtl"] .drawer-body, html[dir="rtl"] .diary-entry-description, html[dir
 html[dir="rtl"] .total-kcal, html[dir="rtl"] .m-val, html[dir="rtl"] .val, html[dir="rtl"] .micro .v, html[dir="rtl"] .diary-entry-calories { direction:ltr; unicode-bidi:isolate; }
 #endpoint-preview, #set-baseurl, #set-apikey, #set-model, #set-keyheader, #set-extra, #diary-date, #diary-calories { direction:ltr; unicode-bidi:isolate; }
 @media(max-width:460px) { html[dir="rtl"] .brand { margin-left:0; } }
+
+/* Destructive-action confirmation: native top-layer modal, shared by both lists. */
+.delete-confirmation {
+  width: min(460px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+  margin: auto; padding: 0; color: var(--text); background: var(--surface-solid);
+  border: 1px solid var(--border-strong); border-radius: 24px;
+  box-shadow: 0 28px 90px -16px rgba(0,0,0,.65); overflow: auto;
+  overscroll-behavior: contain; font-family: var(--font);
+}
+.delete-confirmation[open] { animation: delete-dialog-in .18s ease-out; }
+.delete-confirmation::backdrop { background: rgba(3,7,14,.68); backdrop-filter: blur(6px); }
+.delete-confirmation-content { padding: 30px; position: relative; }
+.delete-confirmation-close { position: absolute; inset-block-start: 16px; inset-inline-end: 16px; border-color: transparent; }
+.delete-confirmation-icon { width: 54px; height: 54px; display: grid; place-items: center; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent); border-radius: 17px; margin-bottom: 20px; }
+.delete-confirmation-icon svg { width: 25px; height: 25px; }
+.delete-confirmation h2 { font-size: 24px; line-height: 1.25; letter-spacing: -.035em; margin: 0 0 12px; padding-inline-end: 32px; }
+.delete-confirmation #delete-confirmation-message { color: var(--text-2); line-height: 1.65; font-size: 14px; margin: 0 0 20px; }
+.delete-confirmation-subject { display: flex; align-items: center; gap: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 15px; }
+.delete-confirmation-subject > span { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; color: var(--brand); background: var(--brand-soft); border-radius: 11px; }
+.delete-confirmation-subject svg { width: 19px; height: 19px; }
+.delete-confirmation-subject div { min-width: 0; }
+.delete-confirmation-subject strong { display: block; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.delete-confirmation-subject small { display: block; color: var(--text-3); font-size: 12px; line-height: 1.5; margin-top: 3px; overflow-wrap: anywhere; }
+.delete-confirmation-warning { display: flex; align-items: center; gap: 8px; margin: 15px 0 25px; color: var(--text-2); font-size: 12px; }
+.delete-confirmation-warning > span:first-child { color: var(--danger); border: 1px solid currentColor; border-radius: 50%; width: 15px; height: 15px; display: grid; place-items: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.delete-confirmation-actions { display: flex; gap: 10px; }
+.delete-confirmation-actions .btn { flex: 1; justify-content: center; min-height: 45px; font-size: 13px; white-space: normal; }
+.delete-confirmation .btn-danger { color: #fff; background: #dc343d; border-color: #dc343d; }
+.delete-confirmation .btn-danger:hover { background: #bd2730; border-color: #bd2730; }
+.delete-confirmation button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+@keyframes delete-dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (max-width: 480px) {
+  .delete-confirmation-content { padding: 25px 22px 22px; }
+  .delete-confirmation h2 { font-size: 22px; }
+  .delete-confirmation-actions { flex-direction: column-reverse; }
+}
+@media (prefers-reduced-motion: reduce) { .delete-confirmation[open] { animation: none; } }
+
+/* Keep the meal's model confidence beside its calories, never on manual entries. */
+.diary-entry-calories { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.diary-confidence { display: inline-flex; align-items: center; max-width: 100%; padding: 4px 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--text-2); font-size: 10px; line-height: 1.4; font-weight: 500; font-variant-numeric: tabular-nums; white-space: normal; }
+.diary-entry-calories .diary-confidence { margin-top: 5px; max-width: 145px; text-align: end; }
+.diary-confidence-unavailable { color: var(--text-3); }
+.library-meal-description .diary-confidence { margin-top: 6px; }
+@media (max-width: 480px) { .diary-entry-calories .diary-confidence { max-width: 112px; } }
+
+/* Semantic confidence colors do not change with the chosen accent.
+   Thresholds use the visible rounded percentage: 70+ high, 40–69 medium, <40 low. */
+.diary-confidence-high { --confidence-color: #6ee7b7; }
+.diary-confidence-medium { --confidence-color: #fcd34d; }
+.diary-confidence-low { --confidence-color: #fca5a5; }
+.diary-confidence:is(.diary-confidence-high, .diary-confidence-medium, .diary-confidence-low) {
+  color: var(--confidence-color);
+  background: color-mix(in srgb, var(--confidence-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--confidence-color) 30%, transparent);
+}
+html[data-theme="light"] .diary-confidence-high { --confidence-color: #047857; }
+html[data-theme="light"] .diary-confidence-medium { --confidence-color: #92400e; }
+html[data-theme="light"] .diary-confidence-low { --confidence-color: #b91c1c; }
+
+/* Diary menu rows have the same action footer as saved-analysis rows. */
+.library-meal-actions .library-delete { margin-left: auto; }
+
+/* Diary menu rows have the same action footer as saved-analysis rows. */
+.library-meal-actions .library-delete { margin-left: auto; }

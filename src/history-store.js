@@ -28,7 +28,7 @@ export function historySnapshot(entry) {
 }
 
 function metadata(entry) {
-  return { id:entry.id,when:entry.when,dish:entry.dish,calories:entry.calories,model:entry.model,thumb:entry.thumb,summary:entry.summary,legacy:entry.legacy };
+  return { id:entry.id,when:entry.when,dish:entry.dish,calories:entry.calories,confidence:typeof entry.result?.confidence==='number' && Number.isFinite(entry.result.confidence) ? entry.result.confidence : null,model:entry.model,thumb:entry.thumb,summary:entry.summary,legacy:entry.legacy };
 }
 
 export function createHistoryRepository({ indexedDB = globalThis.indexedDB, storage = globalThis.localStorage, name = DB_NAME, notify = () => {} } = {}) {

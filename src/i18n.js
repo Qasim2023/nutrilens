@@ -23,7 +23,7 @@ export function translate(text,code=language){
   const action=source.match(/^(Edit|Delete) (.+)$/);
   if(action)return (dictionary[action[1]]||action[1])+' '+action[2];
   if(source.includes(' · '))return match[1]+source.split(' · ').map(part=>translate(part,code)).join(' · ')+match[3];
-  const count=source.match(/^(\d+) (saved analyses|diary entries)$/);
+  const count=source.match(/^(\d+) (saved analysis|saved analyses|diary entry|diary entries)$/);
   if(count)return count[1]+' '+(dictionary[count[2]]||count[2]);
   const macroEnergy=source.match(/^(\d+)% of macro energy$/);
   if(macroEnergy)return macroEnergy[1]+'% '+(dictionary['of macro energy']||'of macro energy');

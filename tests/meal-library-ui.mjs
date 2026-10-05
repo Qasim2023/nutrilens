@@ -37,15 +37,17 @@ try {
     await page.waitForFunction(({analysisCount,diaryCount})=>document.querySelector('#library-history-count').textContent===String(analysisCount)&&document.querySelector('#library-diary-count').textContent===String(diaryCount),{analysisCount,diaryCount});
   }
   async function confirmDelete(accept) {
-    const dialogPromise=page.waitForEvent('dialog');
-    const clickPromise=clear.click();
-    const dialog=await dialogPromise;
-    const message=dialog.message();
+    await clear.click();
+    const dialog=page.locator('#delete-confirmation');
+    await dialog.waitFor({state:'visible'});
+    const message=await dialog.innerText();
     assert.match(message,/cannot be undone/);
     assert.match(message,/will be kept/);
     assert.doesNotMatch(message,/Both tabs will be cleared/);
-    await (accept?dialog.accept():dialog.dismiss());
-    await clickPromise;
+    assert.equal(await dialog.getAttribute('role'),'alertdialog');
+    assert.equal(await page.locator('[data-delete-cancel]').evaluate(el=>el===document.activeElement),true);
+    await page.locator(accept?'[data-delete-confirm]':'[data-delete-cancel]').click();
+    await dialog.waitFor({state:'detached'});
     await page.waitForFunction(()=>!document.querySelector('#meal-library-close').disabled);
     return message;
   }
@@ -57,20 +59,20 @@ try {
   await page.locator('#meal-library-search').fill('no matches');
   assert.equal(await page.locator('#meal-library-list .library-meal').count(),0);
   const warning=await confirmDelete(false);
-  assert.match(warning,/ALL 36 saved analyses/);
-  assert.match(warning,/All diary meals and daily calorie totals will be kept/);
+  assert.match(warning,/36 saved analyses/);
+  assert.match(warning,/Diary meals and daily calorie totals will be kept/);
   assert.equal(await page.locator('#library-history-count').textContent(),'36');
   assert.equal(await page.locator('#library-diary-count').textContent(),'3');
   assert.equal(await page.locator('#meal-library-search').inputValue(),'no matches');
   await page.locator('#meal-library-search').fill('');
-  await page.screenshot({path:'artifacts/meal-library-bulk-delete.png'});
+  await page.screenshot({path:'artifacts/library-regression-desktop.png'});
   await page.setViewportSize({width:390,height:844});
   await page.locator('#library-tab-diary').click();
   assert.equal(await clear.textContent(),'Delete all diary meals');
   assert.match(await page.locator('#meal-library-clear-note').textContent(),/Saved analyses are kept/);
   const bounds=await clear.boundingBox();
   assert.ok(bounds.x>=0 && bounds.x+bounds.width<=390 && bounds.y+bounds.height<=844);
-  await page.screenshot({path:'artifacts/meal-library-bulk-delete-mobile.png'});
+  await page.screenshot({path:'artifacts/library-regression-mobile.png'});
   await page.locator('#library-tab-history').click();
   await page.locator('#meal-library-search').fill('no matches');
   await confirmDelete(true);
@@ -90,8 +92,8 @@ try {
   assert.equal(await clear.isEnabled(),true);
   await page.locator('#meal-library-search').fill('no matches');
   const diaryWarning=await confirmDelete(true);
-  assert.match(diaryWarning,/ALL 3 diary meals from every date/);
-  assert.match(diaryWarning,/All saved analyses will be kept/);
+  assert.match(diaryWarning,/Diary meals from every date/);
+  assert.match(diaryWarning,/Saved analyses will be kept/);
   assert.equal(await clear.isDisabled(),true);
   assert.equal(await page.locator('#library-diary-count').textContent(),'0');
   await page.locator('#meal-library-close').click();await page.locator('#view-diary').click();
