@@ -1,0 +1,16 @@
+const fs=require('node:fs');
+function edit(file,before,after){const text=fs.readFileSync(file,'utf8');if(!text.includes(before))throw new Error('Missing '+file);fs.writeFileSync(file,text.replace(before,after));}
+const packageFile='package.json',pkg=JSON.parse(fs.readFileSync(packageFile,'utf8'));pkg.scripts['build:pages']='node scripts/build-pages.mjs';fs.writeFileSync(packageFile,JSON.stringify(pkg,null,2)+'\n');
+fs.appendFileSync('.gitignore','\n# Generated static deployment; only dist is uploaded by the Pages workflow.\ndist/\n');
+edit('src/store.js','import { normalizeLanguage }','import { isStaticHosting } from "./hosting.js";\nimport { normalizeLanguage }');
+edit('src/store.js','  transport: "relay",','  transport: isStaticHosting() ? "direct" : "relay",');
+edit('src/store.js','key==="language"?normalizeLanguage(stored[key]):','key==="transport"&&isStaticHosting()?"direct":key==="language"?normalizeLanguage(stored[key]):');
+edit('src/connection.js','// URL handling','import { effectiveTransport, isStaticHosting } from "./hosting.js";\n\n// URL handling');
+edit('src/connection.js','settings.transport !== "direct" && typeof location','effectiveTransport(settings) !== "direct" && typeof location');
+edit('src/connection.js','    throw new Error("Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");','    throw new Error(isStaticHosting() ? "Could not connect to the AI provider from this static site. Your HTTPS endpoint must allow browser CORS requests from this site. GitHub Pages cannot run the local relay. Use a CORS-enabled provider or your own trusted authenticated proxy; check the endpoint and network." : "Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");');
+edit('src/attachments.js','// Client-side recipe attachment','import { isStaticHosting } from "./hosting.js";\n\n// Client-side recipe attachment');
+edit('src/attachments.js',"async function extractDocument(file) {","async function extractDocument(file) {\n  if(isStaticHosting()){\n    const {extractBrowserDocument}=await import('./browser-documents.js');\n    return extractBrowserDocument(file);\n  }");
+edit('index.html','  <div class="drawer-body">','  <div class="drawer-body">\n    <div class="hosting-notice" id="static-hosting-notice" role="note" hidden><strong>Static website mode</strong><p>This site sends AI requests directly to your chosen provider. The provider must allow browser requests (CORS). No local relay runs here.</p><p>Use your own API key. Never put an API key in the repository or a public website.</p></div>');
+edit('src/app.js','import { LANGUAGES,','import { isStaticHosting } from "./hosting.js";\nimport { LANGUAGES,');
+edit('src/app.js','  setValue("#set-transport", s.transport);','  setValue("#set-transport", isStaticHosting()?"direct":s.transport);\n  $("#static-hosting-notice").hidden=!isStaticHosting();\n  $("#set-transport").querySelector(\'option[value="relay"]\').disabled=isStaticHosting();\n  $("#set-transport").disabled=isStaticHosting();');
+edit('src/app.js','  saveSettings(state.settings);','  if(isStaticHosting())state.settings.transport="direct";\n  saveSettings(state.settings);');

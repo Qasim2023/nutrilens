@@ -190,3 +190,34 @@ node tests/pages-ui.mjs /absolute/path/to/playwright /absolute/path/to/browser
 Both arguments are optional when Playwright and its Chromium are already installed.
 This checks PDF/DOCX parsing, CORS requests, Analysis, Diary, persistence, and mobile
 layout. It does not send files or API keys to a real AI service.
+
+## Windows desktop app
+
+Built 64-bit Windows executables are in `release/`:
+
+- **NutriLens-Setup-1.0.0.exe** — installer with a desktop and Start menu shortcut (recommended).
+- **NutriLens-Portable-1.0.0.exe** — double-click to run without installing. Keep this single EXE; no Node.js installation or terminal is needed.
+
+The desktop app includes its own browser runtime and local server. Closing its window stops the server. It uses loopback port **17843** and will report an error rather than open an unrelated service if that port is occupied. Only one NutriLens desktop instance runs at a time.
+
+Open **Settings** on first launch to configure your AI provider, key, and model. Remote AI still needs internet access and any applicable provider account/quota; local providers work when their server is running. Manual diary entries do not require AI. Desktop settings, history, and diary data are saved in the app's Windows user profile, shared by portable and installed launches. The portable EXE is portable software, not portable user data. Data from a regular browser is separate and is not automatically imported. API keys remain in local browser storage, not an encrypted vault.
+
+These locally built executables are **not code-signed**, so Windows may show an unknown-publisher or SmartScreen warning. No signing certificate is included.
+
+### Rebuild and verify
+
+```powershell
+pnpm install
+pnpm run desktop            # run the desktop app from source
+pnpm run build:desktop      # generate installer and portable EXE
+pnpm run test:desktop       # test the packaged app in an isolated profile
+pnpm test                   # existing app tests
+```
+
+Desktop tests check application initialization, local relay health, browser storage, renderer isolation, and real PDF/DOCX parsing inside the packaged app. They make no external AI requests. To test the portable artifact instead:
+
+```powershell
+node scripts/test-desktop.mjs release/NutriLens-Portable-1.0.0.exe
+```
+
+`desktop/main.mjs` is the sandboxed desktop launcher; `package.json` contains the packaging configuration. To recreate the Windows icon from the existing NutriLens design, run `scripts/build-desktop-icon.ps1`.

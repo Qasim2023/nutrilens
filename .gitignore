@@ -11,3 +11,10 @@ __pycache__/
 
 # Generated static deployment; only dist is uploaded by the Pages workflow.
 dist/
+
+# Windows desktop build output
+release/
+artifacts/desktop-test-profile-*/
+artifacts/desktop-smoke*.log
+artifacts/desktop-test.log
+artifacts/desktop-smoke.png
