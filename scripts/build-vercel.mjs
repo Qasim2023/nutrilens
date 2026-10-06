@@ -17,8 +17,8 @@ if (code !== 0) {
   process.exitCode = code;
   console.error('Regression tests failed. No new Vercel deployment was generated.');
 } else {
-  const artifact = await buildPages();
+  const artifact = await buildPages({hostedRelay:true});
   const {checked} = await checkPublicContent(artifact);
   console.log(`Vercel static build ready (${artifact.files.length} allowlisted files; ${checked} first-party privacy checks).`);
-  console.log('No relay, account configuration, credentials, browser meals, or local artifacts are deployed.');
+  console.log('Browser assets contain no credentials or personal data. Vercel separately deploys the provider-restricted api/wikivibe.js function.');
 }

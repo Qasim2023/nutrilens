@@ -1,7 +1,7 @@
 /* ==========================================================================
    NutriLens — settings + history persistence
-   API keys stay in tab-scoped sessionStorage and go only to the endpoint
-   the user configures. Nothing is sent to NutriLens servers (there are none).
+   API keys stay in tab-scoped sessionStorage. Hosted WikiVibe requests pass
+   through the Vercel relay to that provider; the relay does not persist keys.
    ========================================================================== */
 
 import { DEFAULT_BASE_URL, DEFAULT_MODEL, PRESETS } from "./ai.js";

@@ -48,14 +48,14 @@ test('legacy visitor connection preferences are never replaced with a maintainer
   } finally {Object.assign(globalThis, old);}
 });
 
-test('Vercel production and preview domains force direct requests, not lookalikes', () => {
+test('Vercel production and preview domains disable the local relay, not lookalikes', () => {
   for (const hostname of ['example.vercel.app','preview-branch-team.vercel.app']) {
     assert.equal(isStaticHosting({hostname}),true); assert.equal(effectiveTransport({transport:'relay'},{hostname}),'direct');
   }
   for (const hostname of ['vercel.app.evil.test','notvercel.app','localhost']) assert.equal(isStaticHosting({hostname}),false);
 });
 
-test('Vercel publishes only dist, uses pinned install and enforces the shared security headers', async () => {
+test('Vercel publishes the allowlisted frontend, uses pinned install and shared security headers', async () => {
   const config = JSON.parse(await read('vercel.json')), pkg = JSON.parse(await read('package.json'));
   assert.equal(config.framework,null); assert.equal(config.outputDirectory,'dist');
   assert.equal(config.installCommand,'ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm install --frozen-lockfile');
@@ -76,11 +76,13 @@ test('public-content check rejects tokens, hard-coded credentials and private lo
   assert.deepEqual(publicContentIssues('apiKey: "", model: "", baseUrl: ""'),[]);
 });
 
-test('Vercel artifact passes privacy checks and excludes personal files/backend', async () => {
+test('Vercel browser artifact excludes personal files and relay implementation', async () => {
   const tempRoot = path.resolve(os.tmpdir()), temp = await fs.mkdtemp(path.join(tempRoot,'nutrilens-vercel-test-'));
   try {
-    const artifact = await buildPages({outputDirectory:path.join(temp,'site')});
+    const artifact = await buildPages({outputDirectory:path.join(temp,'site'),hostedRelay:true});
     assert.ok((await checkPublicContent(artifact)).checked > 10);
+    assert.match(await fs.readFile(path.join(artifact.output,'src/hosting-config.js'),'utf8'),/HOSTED_RELAY = true/);
+    assert.equal(artifact.files.includes('api/wikivibe.js'),false);
     assert.equal(artifact.files.some(name=>/^(artifacts|tests|server|desktop|release|\.git|\.env|\.vercel)(\/|\.|$)/.test(name)),false);
     for (const file of ['vercel.json','README.md','package.json','pnpm-lock.yaml']) assert.equal(artifact.files.includes(file),false);
     await fs.writeFile(path.join(artifact.output,'src/hosting-config.js'),'export const apiKey = "";\nconst config = {apiKey: "synthetic-private-key"};');

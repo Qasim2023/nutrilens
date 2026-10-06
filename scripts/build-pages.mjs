@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {netlifyHeadersFile} from './netlify-headers.mjs';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 // Only these app files and pinned package assets can reach the published site.
-export async function buildPages({outputDirectory=path.join(root,'dist')}={}){
+export async function buildPages({outputDirectory=path.join(root,'dist'),hostedRelay=false}={}){
   const output=path.resolve(outputDirectory);
   if(output===root||root.startsWith(output+path.sep))throw new Error('Build output must not contain the project root.');
   const files=new Map();
@@ -16,7 +16,7 @@ export async function buildPages({outputDirectory=path.join(root,'dist')}={}){
   for(const entry of await fs.readdir(path.join(root,'public'),{withFileTypes:true})){
     if(entry.isFile()&&/\.(svg|png|ico|webmanifest)$/.test(entry.name))add('public/'+entry.name,path.join(root,'public',entry.name));
   }
-  files.set('src/hosting-config.js',{data:'// Generated static site: direct browser requests, no backend.\nexport const STATIC_HOSTING = true;\n'});
+  files.set('src/hosting-config.js',{data:`// Generated browser assets. Hosted relay capability is Vercel-only.\nexport const STATIC_HOSTING = true;\nexport const HOSTED_RELAY = ${hostedRelay};\n`});
   files.set('.nojekyll',{data:''});
   files.set('_headers',{data:netlifyHeadersFile()});
   add('vendor/mammoth/mammoth.browser.min.js',path.join(root,'node_modules/mammoth/mammoth.browser.min.js'));

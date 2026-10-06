@@ -19,7 +19,7 @@ Open `http://localhost:5173/`. To use another port: `node server.mjs 8080`.
 The app ships with no API key, account, default endpoint or selected model. Each visitor must configure their own connection. Public provider presets are optional conveniences, not shared credentials.
 
 1. Open **Settings**. Choose a provider preset or enter your own API URL, then enter your own key in the masked field.
-2. On Vercel, use **Direct browser requests** (enforced by the static build). Your HTTPS provider must allow browser CORS. Local development can use the loopback relay.
+2. On Vercel, WikiVibe automatically uses **Vercel relay**; other providers use **Direct browser requests** and must allow CORS. Local development can use the loopback relay.
 3. Click **Fetch available models**, then choose an actual model ID from the dropdown.
 4. Click **Test connection**. This sends a small prompt and may consume provider quota.
 5. Attach a photo and/or describe food, then click **Analyse**. Use a vision-capable model for photos.
@@ -53,7 +53,7 @@ node server.mjs
 
 Use an origin, not a full API path. Multiple origins can be comma-separated. Do not trust unrecognized hosts or metadata/internal-service addresses. Alternatively use **Direct browser requests** if that provider allows CORS.
 
-On static hosting the relay is unavailable: choose Direct mode. The relay is intended for local use, not as a public multi-user proxy.
+On Vercel, the fixed-provider WikiVibe function is available; keys and submitted food pass through Vercel before reaching WikiVibe. Other static providers use Direct mode and require browser CORS. The loopback relay remains local-only and must never be exposed publicly.
 
 ## Features
 
@@ -140,14 +140,14 @@ Analysis and blank-calorie Diary entries use the configured AI model’s food kn
 
 ## Deploy to Vercel
 
-See [VERCEL.md](VERCEL.md) for the deployment checklist. Import this repository in Vercel with **Other** as the framework preset and Node.js **24.x**. The checked-in configuration installs pinned dependencies, runs regression tests and publishes only the allowlisted static `dist/` output.
+See [VERCEL.md](VERCEL.md) for the deployment checklist. Import this repository in Vercel with **Other** as the framework preset and Node.js **24.x**. The checked-in configuration installs pinned dependencies, runs regression tests and publishes the allowlisted `dist/` frontend plus the separately deployed provider-restricted Vercel function.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm run build:vercel
 ```
 
-Do not add your provider API key to Vercel environment variables or the repository. Every visitor enters their own HTTPS/CORS-compatible API URL, key and model in Settings. The hosted site has no shared backend or API credentials; manual diary entries still work without AI. Local screenshots, meal backups and verification artifacts are excluded from Git.
+Do not add your provider API key to Vercel environment variables or the repository. Every visitor enters their own API key and model. Select WikiVibe to use the restricted Vercel relay for https://api.wikivibe.dev/v1 without provider browser CORS. Other providers still need HTTPS/CORS for direct requests. The hosted site has no shared provider API credentials; manual diary entries still work without AI. Local screenshots, meal backups and verification artifacts are excluded from Git.
 
 ## Deploy to Netlify for personal use
 

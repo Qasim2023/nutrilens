@@ -8,7 +8,7 @@ import { extractRecipeDocument } from "./server/recipe-parser.mjs";
 import { pipeline } from "node:stream/promises";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const defaultOrigins = ["https://api.openai.com", "https://openrouter.ai", "https://api.groq.com", "https://api.together.xyz", "https://api.deepseek.com", "https://api.mistral.ai", "https://api.x.ai", "http://localhost:11434", "http://127.0.0.1:11434", "http://localhost:1234", "http://127.0.0.1:1234"];
+const defaultOrigins = ["https://api.wikivibe.dev", "https://api.openai.com", "https://openrouter.ai", "https://api.groq.com", "https://api.together.xyz", "https://api.deepseek.com", "https://api.mistral.ai", "https://api.x.ai", "http://localhost:11434", "http://127.0.0.1:11434", "http://localhost:1234", "http://127.0.0.1:1234"];
 const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
 function sendJson(res, status, message) {
   res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });

@@ -9,7 +9,7 @@ import {checkPublicContent} from '../scripts/check-public-content.mjs';
 const {chromium} = createRequire(import.meta.url)(process.argv[2] || 'playwright');
 const config = JSON.parse(await fs.readFile(new URL('../vercel.json',import.meta.url),'utf8'));
 const headers = Object.fromEntries(config.headers[0].headers.map(({key,value})=>[key,value]));
-const artifact = await buildPages(); await checkPublicContent(artifact);
+const artifact = await buildPages({hostedRelay:true}); await checkPublicContent(artifact);
 const allowed = new Set(artifact.files), calls = [], errors = [], external = [];
 const mime = {'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.json':'application/json','.webmanifest':'application/manifest+json'};
 const raw = {dish:'Synthetic apple',summary:'Browser verification fixture',confidence:.8,items:[{name:'Apple',grams:100,quantity:'1 apple',calories:95}],total:{calories:95,protein_g:.5,carbs_g:25,fat_g:.3},health_score:80};

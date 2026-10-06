@@ -1,4 +1,5 @@
 import { effectiveTransport, isStaticHosting } from "./hosting.js";
+import {HOSTED_RELAY_PATH, hostedProviderPath, HOSTED_ROUTES} from './hosted-provider.js';
 import {validateEndpoint, validateHeader} from "./security-policy.js";
 
 // URL handling and transport shared by connection tests, model discovery and analysis.
@@ -90,16 +91,29 @@ export async function requestJson(settings, url, { method = "POST", body, signal
   validateEndpoint(url, {hosted:globalThis.location?.protocol === 'https:'});
   const timeout = AbortSignal.timeout(120000);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
-  const useRelay = effectiveTransport(settings) !== "direct" && typeof location !== "undefined" && /^https?:$/.test(location.protocol);
+  const transport = effectiveTransport(settings);
+  const useRelay = transport === 'relay' && typeof location !== 'undefined' && /^https?:$/.test(location.protocol);
+  let hostedRequest;
+  if (transport === 'hosted') {
+    const path = hostedProviderPath(url);
+    if (HOSTED_ROUTES[path] !== method) throw new Error('Unsupported hosted provider method.');
+    if (settings.auth !== 'bearer') throw new Error('The WikiVibe relay requires Bearer authentication with your own API key.');
+    if (String(settings.extraHeaders || '').trim()) throw new Error('The WikiVibe relay does not forward custom headers. Clear Extra headers in Settings.');
+    const key = String(settings.apiKey || '').trim().replace(/^Bearer\s+/i, '');
+    if (!key) throw new Error('Enter your own WikiVibe API key in Settings. No shared key is configured.');
+    validateHeader('Authorization', 'Bearer ' + key);
+    hostedRequest = {method:'POST', headers:{'Content-Type':'application/json','X-NutriLens-Relay':'hosted-v1','Authorization':'Bearer '+key},body:JSON.stringify({path,method,body}),signal:combined,redirect:'error',credentials:'same-origin',referrerPolicy:'no-referrer',cache:'no-store'};
+  }
   let res;
   try {
-    res = await fetch(useRelay ? "/api/relay" : url, useRelay ? {
+    res = await fetch(hostedRequest ? HOSTED_RELAY_PATH : useRelay ? "/api/relay" : url, hostedRequest || (useRelay ? {
       method: "POST", headers: { "Content-Type": "application/json", "X-NutriLens-Relay": "1" },
       body: JSON.stringify({ url, method, headers: buildHeaders(settings), body }), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store",
-    } : { method, headers: buildHeaders(settings), body: body === undefined ? undefined : JSON.stringify(body), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store" });
+    } : { method, headers: buildHeaders(settings), body: body === undefined ? undefined : JSON.stringify(body), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store" }));
   } catch (error) {
     if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
     if (timeout.aborted) throw new Error("The endpoint timed out after 120 seconds. Try another model or a smaller request.");
+    if (transport === 'hosted') throw new Error('Could not reach the Vercel relay. Deploy the latest version and check the site/network.');
     throw new Error(isStaticHosting() ? "Could not connect to your provider from this static site. Your HTTPS endpoint must allow browser CORS requests from this site. This static deployment cannot run the local relay. Use a CORS-enabled provider or your own trusted authenticated proxy; check the endpoint and network." : "Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");
   }
   const limit = 24 * 1024 * 1024;

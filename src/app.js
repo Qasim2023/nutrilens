@@ -2,7 +2,7 @@
    NutriLens — app controller
    ========================================================================== */
 
-import { isStaticHosting } from "./hosting.js";
+import { isStaticHosting, hasHostedRelay, effectiveTransport } from "./hosting.js";
 import { LANGUAGES, initLocalization, setLanguage, getLocale } from "./i18n.js";
 import { endpointUrl, PRESETS, MODEL_SUGGESTIONS, analyzeFood, testConnection, listModels } from "./ai.js";
 import { defaults, loadSettings, saveSettings, resetSettings, loadSession, saveSession } from "./store.js";
@@ -465,10 +465,7 @@ function syncDrawer() {
   setValue("#set-provider", s.provider);
   setValue("#set-baseurl", s.baseUrl);
   setValue("#set-apiformat", s.apiFormat);
-  setValue("#set-transport", isStaticHosting()?"direct":s.transport);
-  $("#static-hosting-notice").hidden=!isStaticHosting();
-  $("#set-transport").querySelector('option[value="relay"]').disabled=isStaticHosting();
-  $("#set-transport").disabled=isStaticHosting();
+  syncTransport();
   setToggle("#set-demo", s.demoMode);
   $("#temperature-out").textContent = Number(s.temperature).toFixed(1);
   updateEndpointPreview();
@@ -493,6 +490,18 @@ function syncDrawer() {
   updateProviderHint();
 }
 
+function syncTransport() {
+  const transport = effectiveTransport(state.settings), selector = $('#set-transport');
+  selector.querySelector('option[value="hosted"]').hidden = !hasHostedRelay();
+  selector.querySelector('option[value="hosted"]').disabled = !hasHostedRelay();
+  selector.querySelector('option[value="relay"]').disabled = isStaticHosting();
+  selector.disabled = isStaticHosting();
+  setValue('#set-transport', transport);
+  $('#static-hosting-notice').hidden = !isStaticHosting();
+  $('#hosted-relay-notice').hidden = transport !== 'hosted';
+  $('#direct-hosting-notice').hidden = transport === 'hosted';
+}
+
 function setValue(sel, v) { const el = $(sel); if (el) el.value = v ?? ""; }
 function setToggle(sel, on) { const el = $(sel); if (el) el.setAttribute("aria-checked", String(Boolean(on))); }
 
@@ -509,6 +518,7 @@ function updateProviderHint() {
   if (!hint) return;
   const bits = [];
   if (preset.auth === "none") bits.push("This provider normally runs locally and needs no API key.");
+  if (p === 'wikivibe' && hasHostedRelay()) bits.push('Vercel forwards requests to WikiVibe using your own key. No provider browser CORS permission is needed for this route.');
   if (p === "custom") bits.push("Use a compatible <code>/chat/completions</code> endpoint.");
   if (p === "azure") bits.push("Replace the resource and deployment placeholders in the base URL. An <code>api-version</code> query is appended automatically.");
   if (p === "openrouter") bits.push("Use <code>openrouter.ai/api/v1</code>; vision models start with e.g. <code>openai/gpt-4o</code>.");
@@ -542,6 +552,7 @@ function persist() {
   setLanguage(state.settings.language);
   if(isStaticHosting())state.settings.transport="direct";
   saveSettings(state.settings);
+  syncTransport();
   applyTheme();
   updateEndpointPreview();
   updateComposerHint();
@@ -812,7 +823,7 @@ function updateEndpointPreview() {
   const host = $("#endpoint-preview");
   if (!host) return;
   try {
-    host.textContent = "Request URL: " + endpointUrl(state.settings.baseUrl, state.settings.provider, state.settings.endpointMode, state.settings.apiFormat || "auto");
+    host.textContent = (effectiveTransport(state.settings) === "hosted" ? "Via Vercel relay → " : "Request URL: ") + endpointUrl(state.settings.baseUrl, state.settings.provider, state.settings.endpointMode, state.settings.apiFormat || "auto");
   } catch (error) { host.textContent = error.message; }
 }
 

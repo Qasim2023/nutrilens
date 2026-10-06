@@ -53,6 +53,28 @@
           "value": "max-age=31536000"
         }
       ]
+    },
+    {
+      "source": "/api/wikivibe",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "Vercel-CDN-Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
-  ]
+  ],
+  "functions": {
+    "api/wikivibe.js": {
+      "maxDuration": 60
+    }
+  }
 }

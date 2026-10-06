@@ -2,13 +2,13 @@
 
 ## Scope and limits
 
-NutriLens is a personal static browser application, optionally served by a
-loopback-only Node relay. There are no accounts, password database, SQL queries,
+NutriLens is a browser application with an optional loopback-only local relay
+and a provider-restricted WikiVibe Vercel function. There are no accounts, password database, SQL queries,
 or shared production API keys. These protections are defense in depth, not a
 claim that the app is attack-proof or an audited medical-data vault.
 
-Do not expose the local relay to the internet. The application has no public
-backend authentication. Site-access protection must be configured with the host;
+Do not expose the local relay to the internet. The hosted function requires a visitor-owned provider key but has no independent
+site-account authentication. The provider authenticates that key. Site-access protection must be configured with the host;
 an unshared URL, CSP and noindex are not access controls.
 
 ## Implemented protections
@@ -129,3 +129,15 @@ Report suspected vulnerabilities privately to the project maintainer rather
 than posting keys, personal meals, photos or exploitable details in a public issue.
 Revoke exposed provider keys immediately. No dedicated reporting address has
 been configured yet; establish one before public launch.
+
+## WikiVibe hosted function
+
+See VERCEL.md for the fixed-target/route restrictions, Bearer-key requirement,
+same-origin browser defenses, no-store response policy, 4 MiB size limits,
+50-second upstream timeout and best-effort per-instance limits. Keys and food
+pass through Vercel. No raw credentials or requests are intentionally logged or
+persisted by application code, but hosting/provider policies still apply.
+Same-origin checks are not authentication against non-browser clients, and
+instance limits are not distributed. Configure edge/WAF abuse protection and
+provider spend caps; add real account authentication/distributed limits before
+expanding a public service. Never make the loopback relay public.
