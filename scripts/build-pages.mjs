@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {netlifyHeadersFile} from './netlify-headers.mjs';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 // Only these app files and pinned package assets can reach the published site.
 export async function buildPages({outputDirectory=path.join(root,'dist')}={}){
@@ -15,8 +16,9 @@ export async function buildPages({outputDirectory=path.join(root,'dist')}={}){
   for(const entry of await fs.readdir(path.join(root,'public'),{withFileTypes:true})){
     if(entry.isFile()&&/\.(svg|png|ico|webmanifest)$/.test(entry.name))add('public/'+entry.name,path.join(root,'public',entry.name));
   }
-  files.set('src/hosting-config.js',{data:'// Generated GitHub Pages build: direct browser requests, no backend.\nexport const STATIC_HOSTING = true;\n'});
+  files.set('src/hosting-config.js',{data:'// Generated static site: direct browser requests, no backend.\nexport const STATIC_HOSTING = true;\n'});
   files.set('.nojekyll',{data:''});
+  files.set('_headers',{data:netlifyHeadersFile()});
   add('vendor/mammoth/mammoth.browser.min.js',path.join(root,'node_modules/mammoth/mammoth.browser.min.js'));
   add('vendor/mammoth/LICENSE',path.join(root,'node_modules/mammoth/LICENSE'));
   for(const name of ['pdf.min.mjs','pdf.worker.min.mjs'])add('vendor/pdfjs/'+name,path.join(root,'node_modules/pdfjs-dist/legacy/build',name));

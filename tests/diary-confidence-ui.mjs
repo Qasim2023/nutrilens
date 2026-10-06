@@ -25,14 +25,14 @@ try{
   });
   await page.reload();await page.locator('#view-diary').click();
   const ai=page.locator('[data-diary-entry="ai"]'),manual=page.locator('[data-diary-entry="manual"]');
-  assert.equal(await ai.locator('.diary-entry-calories .diary-confidence').textContent(),'87% AI confidence');
+  assert.equal(await ai.locator('.diary-entry-calories .diary-confidence').textContent(),'87% estimate confidence');
   assert.equal(await manual.locator('.diary-confidence').count(),0);
-  assert.equal(await page.locator('[data-diary-entry="legacy"] .diary-confidence').textContent(),'AI confidence unavailable');
+  assert.equal(await page.locator('[data-diary-entry="legacy"] .diary-confidence').textContent(),'Estimate confidence unavailable');
   await page.locator('.diary-log-card').screenshot({animations:'disabled',path:'artifacts/diary-confidence-desktop.png'});
-  await page.reload();await page.locator('#view-diary').click();assert.equal(await ai.locator('.diary-confidence').textContent(),'87% AI confidence');
+  await page.reload();await page.locator('#view-diary').click();assert.equal(await ai.locator('.diary-confidence').textContent(),'87% estimate confidence');
   // Same calories and food keep confidence when changing only the meal category.
   await page.locator('[data-edit-entry="ai"]').click();await page.locator('#diary-meal').selectOption('dinner');await page.locator('#diary-save').click();
-  assert.equal(await ai.locator('.diary-confidence').textContent(),'87% AI confidence');
+  assert.equal(await ai.locator('.diary-confidence').textContent(),'87% estimate confidence');
   await page.locator('[data-edit-entry="ai"]').click();await page.locator('#diary-calories').fill('430');await page.locator('#diary-save').click();
   assert.equal(await ai.locator('.diary-confidence').count(),0);
   // Confidence from an actual saved full-result path reaches the diary draft.
@@ -40,12 +40,12 @@ try{
   await page.locator('[data-open-analysis="saved"]').first().click();
   await page.locator('[data-action="log-diary"]').click();await page.locator('#diary-save').click();
   const soup=page.locator('.diary-entry').filter({has:page.getByText('Saved lentil soup',{exact:true})});
-  assert.equal(await soup.locator('.diary-confidence').textContent(),'92% AI confidence');
+  assert.equal(await soup.locator('.diary-confidence').textContent(),'92% estimate confidence');
   // Fresh estimates save confidence from the mocked response without an external request.
   await page.route('**/api/relay',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({choices:[{message:{content:JSON.stringify({dish:'Test apple',confidence:.81,items:[{name:'Apple',calories:95}],total:{calories:95},portion_notes:'One medium apple.'})}}]})}));
   await page.locator('#diary-food').fill('Test apple');await page.locator('#diary-calories').fill('');await page.locator('#diary-save').click();
   const apple=page.locator('.diary-entry').filter({has:page.getByText('Test apple',{exact:true})});
-  await apple.waitFor();assert.equal(await apple.locator('.diary-confidence').textContent(),'81% AI confidence');
+  await apple.waitFor();assert.equal(await apple.locator('.diary-confidence').textContent(),'81% estimate confidence');
   await page.setViewportSize({width:390,height:844});
   await page.waitForFunction(()=>!document.querySelector('.toast'));
   await page.locator('.diary-log-card').screenshot({animations:'disabled',path:'artifacts/diary-confidence-mobile.png'});
@@ -55,7 +55,7 @@ try{
   }
   await page.evaluate(async()=>{const {setLanguage}=await import('/src/i18n.js');setLanguage('ur');});
   assert.match(await apple.locator('.diary-confidence').textContent(),/81%/);
-  assert.doesNotMatch(await apple.locator('.diary-confidence').textContent(),/AI confidence/);
+  assert.doesNotMatch(await apple.locator('.diary-confidence').textContent(),/Estimate confidence/);
   assert.equal(await apple.locator('.diary-entry-description strong').textContent(),'Test apple');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.locator('#view-analysis').click();await page.locator('#meal-library-toggle').click();await page.locator('#library-tab-diary').click();

@@ -1,20 +1,27 @@
 /* ==========================================================================
    NutriLens — settings + history persistence
-   API keys stay in this browser's localStorage and go only to the endpoint
+   API keys stay in tab-scoped sessionStorage and go only to the endpoint
    the user configures. Nothing is sent to NutriLens servers (there are none).
    ========================================================================== */
 
-import { DEFAULT_BASE_URL, DEFAULT_MODEL } from "./ai.js";
+import { DEFAULT_BASE_URL, DEFAULT_MODEL, PRESETS } from "./ai.js";
 import { isStaticHosting } from "./hosting.js";
 import { normalizeLanguage } from "./languages.js";
 
 const SETTINGS_KEY = "nutrilens.settings.v1";
 const SESSION_KEY = "nutrilens.session.v1";
+const CREDENTIALS_KEY = "nutrilens.credentials.v1";
+let volatileCredentials = {apiKey:"", extraHeaders:""};
+const credentials = settings => ({apiKey:String(settings.apiKey || ""), extraHeaders:String(settings.extraHeaders || "")});
+function loadCredentials() {
+  try { const raw = globalThis.sessionStorage?.getItem(CREDENTIALS_KEY); if(raw) return credentials(JSON.parse(raw)); } catch {}
+  return {...volatileCredentials};
+}
 
 export const defaults = {
-  connectionRevision: 2,
+  connectionRevision: 3,
   language: "en",
-  provider: "wikivibe",
+  provider: "custom",
   baseUrl: DEFAULT_BASE_URL,
   endpointMode: "auto",
   apiFormat: "auto",
@@ -46,13 +53,16 @@ function supportedSettings(stored) {
 export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return { ...defaults };
+    if (!raw) return { ...defaults, ...loadCredentials() };
     const parsed = JSON.parse(raw);
     const stored = parsed && typeof parsed === "object" ? parsed : {};
-    const settings = supportedSettings(stored);
-    if (stored.connectionRevision !== 2) {
-      Object.assign(settings, { provider: 'wikivibe', baseUrl: DEFAULT_BASE_URL, endpointMode: 'auto', apiFormat: 'auto', transport: isStaticHosting() ? 'direct' : 'relay', demoMode: false, autoAnalyze: false, connectionRevision: 2 });
-    }
+    const settings = {...supportedSettings(stored), ...loadCredentials()};
+    // Migrate legacy credentials once, then remove their persistent copies.
+    if (stored.apiKey || stored.extraHeaders) Object.assign(settings, credentials(stored));
+    // Never inject a maintainer's endpoint during migration. Keep each visitor's
+    // own connection and only normalize retired preset IDs to Custom.
+    if (!Object.hasOwn(PRESETS, settings.provider)) settings.provider = 'custom';
+    settings.connectionRevision = defaults.connectionRevision;
     // Drop retired options and credentials without resetting active provider settings.
     saveSettings(settings);
     return settings;
@@ -63,13 +73,21 @@ export function loadSettings() {
 
 export function saveSettings(settings) {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(supportedSettings(settings)));
+    volatileCredentials = credentials(settings);
+    try {
+      if (volatileCredentials.apiKey || volatileCredentials.extraHeaders) globalThis.sessionStorage?.setItem(CREDENTIALS_KEY, JSON.stringify(volatileCredentials));
+      else globalThis.sessionStorage?.removeItem(CREDENTIALS_KEY);
+    } catch {}
+    const {apiKey, extraHeaders, ...preferences} = supportedSettings(settings);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(preferences));
   } catch (_) {
     /* storage may be unavailable (private mode / file://) — ignore */
   }
 }
 
 export function resetSettings() {
+  volatileCredentials = {apiKey:"", extraHeaders:""};
+  try { globalThis.sessionStorage?.removeItem(CREDENTIALS_KEY); } catch {}
   try { localStorage.removeItem(SETTINGS_KEY); } catch (_) {}
   return { ...defaults };
 }

@@ -552,3 +552,90 @@ html[data-theme="light"] .diary-confidence-low { --confidence-color: #b91c1c; }
 
 /* Diary menu rows have the same action footer as saved-analysis rows. */
 .library-meal-actions .library-delete { margin-left: auto; }
+
+/* Full nutrition expands below its diary row; never opens the analysis tab. */
+.diary-entry { flex-wrap:wrap; }
+.diary-detail-button[aria-expanded="true"] { color:var(--brand); border-color:var(--brand); background:var(--brand-soft); }
+.diary-nutrition { flex:0 0 100%; min-width:0; padding-top:16px; border-top:1px solid var(--border); }
+.diary-nutrition-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.diary-nutrition-heading h3 { margin:0; color:var(--text); font-size:14px; }
+.diary-nutrition-heading .icon-btn { width:30px; height:30px; }
+.diary-nutrition-note { margin:0 0 14px; color:var(--text-3); font-size:12px; line-height:1.5; }
+.diary-nutrition > .card { box-shadow:none; background:var(--surface-2); }
+.diary-nutrition > .card + .card { margin-top:12px; }
+.diary-nutrition .result-title { min-width:0; overflow-wrap:anywhere; }
+.diary-nutrition .item > div { min-width:0; overflow-wrap:anywhere; }
+.diary-nutrition-status { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--brand-soft); color:var(--text-2); font-size:13px; }
+.diary-nutrition-status [data-nutrition-status] { flex:1; min-width:150px; }
+.diary-nutrition .diary-warning { margin-bottom:0; }
+.diary-nutrition .diary-warning p { overflow-wrap:anywhere; }
+@media(max-width:600px) {
+  .diary-nutrition > .card { padding:14px; }
+  .diary-nutrition .result-head { gap:10px; }
+  .diary-nutrition .result-thumb { width:52px; height:52px; }
+  .diary-nutrition .result-title h2 { font-size:18px; }
+  .diary-nutrition .charts { grid-template-columns:1fr; gap:14px; }
+  .diary-nutrition .donut-wrap { margin-inline:auto; }
+  .diary-nutrition .micros { grid-template-columns:minmax(0,1fr); }
+  .diary-nutrition .score-card { gap:14px; }
+  .diary-nutrition .gauge { margin-inline:auto; }
+}
+@media print { .diary-nutrition-heading .icon-btn, .diary-nutrition-status { display:none !important; } }
+
+/* Site footer: shared by the analysis and diary views. */
+.site-footer { margin-top: 64px; border-top: 1px solid var(--border-strong); color: var(--text-2); }
+.footer-main { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding: 34px 0; }
+.footer-logo { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; border-radius: 8px; }
+.footer-logo img { flex: none; border-radius: 10px; }
+.footer-logo .brand-name { font-size: 20px; font-weight: 750; letter-spacing: -.04em; }
+.footer-brand p { max-width: 230px; margin: 12px 0 16px; font-size: 13px; line-height: 1.7; }
+.footer-local { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 6px; background: var(--brand-soft); color: var(--text-2); font-size: 11px; }
+.footer-local > span { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); }
+.footer-column { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.footer-column h2 { color: var(--text); font-size: 12px; font-weight: 650; letter-spacing: .02em; margin: 5px 0 12px; }
+.footer-column button { appearance: none; border: 0; background: none; text-align: start; padding: 6px 0; font-size: 12px; line-height: 1.5; color: var(--text-2); cursor: pointer; transition: color var(--speed); }
+.footer-column button:hover, .footer-top:hover { color: var(--brand); }
+.footer-bottom { border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 19px 0 4px; font-size: 11px; line-height: 1.6; }
+.footer-bottom p { margin: 0; }
+.footer-disclaimer { flex: 1; }
+.footer-top { display: inline-flex; align-items: center; gap: 7px; color: var(--text-2); text-decoration: none; white-space: nowrap; padding: 6px 0; }
+.footer-column button:focus-visible, .footer-logo:focus-visible, .footer-top:focus-visible { outline: 2px solid var(--brand); outline-offset: 5px; border-radius: 3px; }
+.footer-info { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); padding: 28px; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--surface-solid); color: var(--text); box-shadow: var(--shadow); overflow-y: auto; }
+.footer-info::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(5px); }
+body:has(.footer-info[open]) { overflow: hidden; }
+.footer-info-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.footer-info-header .brand-name { font-size: 13px; color: var(--brand); font-weight: 700; }
+.footer-info h2 { margin: 0 0 18px; font-size: 24px; letter-spacing: -.03em; line-height: 1.25; }
+.footer-info p { font-size: 13px; line-height: 1.8; color: var(--text-2); margin: 0 0 16px; }
+.footer-info-note { font-size: 12px; color: var(--text-2); line-height: 1.7; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--brand-soft); }
+.footer-help-steps { padding-inline-start: 22px; margin: 0 0 22px; }
+.footer-help-steps li { padding-inline-start: 6px; }
+.footer-help-steps li::marker { color: var(--brand); font-weight: 700; }
+.footer-help-steps h3 { font-size: 13px; margin: 0 0 5px; }
+@media (max-width: 640px) {
+  .site-footer { margin-top: 44px; }
+  .footer-main { grid-template-columns: 1fr 1fr; gap: 26px 18px; padding: 28px 0; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-brand p { max-width: none; margin-bottom: 12px; }
+  .footer-column button { min-height: 44px; font-size: 12px; }
+  .footer-bottom { gap: 6px 14px; }
+  .footer-disclaimer { order: 3; flex-basis: 100%; }
+  .footer-top { margin-inline-start: auto; min-height: 44px; }
+  .footer-info { padding: 22px; }
+  .footer-info h2 { font-size: 21px; }
+}
+@media print { .site-footer, .footer-info { display: none !important; } }
+
+/* Food thumbnails stay visible in the diary on desktop and small screens. */
+.diary-entry-image { display:block; width:56px; height:56px; flex:0 0 56px; border:1px solid var(--border); border-radius:12px; object-fit:cover; background:var(--surface-2); }
+.diary-entry-placeholder { display:grid; place-items:center; color:var(--brand); background:var(--brand-soft); }
+.diary-entry-placeholder svg { width:24px; height:24px; }
+@media (max-width:720px) {
+  .diary-entry-description { flex:1 1 calc(100% - 68px); max-width:calc(100% - 68px); }
+  .diary-entry-image { align-self:flex-start; }
+}
+
+/* Password modal shares accessible native-dialog styling. */
+.backup-password .field { margin-top: 16px; }
+.backup-password input { width: 100%; }
+.library-backup-actions { flex-wrap: wrap; }

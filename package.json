@@ -2,7 +2,7 @@
   "name": "nutrilens",
   "version": "1.0.0",
   "private": true,
-  "description": "AI food nutrition breakdown — attach a photo or describe a meal, get calories, macros, micros and a health score.",
+  "description": "Food nutrition breakdown — attach a photo or describe a meal, get calories, macros, micros and a health score.",
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
@@ -11,7 +11,10 @@
     "build:pages": "node scripts/build-pages.mjs",
     "desktop": "electron .",
     "build:desktop": "electron-builder --win --x64",
-    "test:desktop": "node scripts/test-desktop.mjs"
+    "test:desktop": "node scripts/test-desktop.mjs",
+    "build:netlify": "node scripts/build-netlify.mjs",
+    "build": "node scripts/build-vercel.mjs",
+    "build:vercel": "node scripts/build-vercel.mjs"
   },
   "keywords": [
     "nutrition",
@@ -75,5 +78,6 @@
     "portable": {
       "artifactName": "NutriLens-Portable-${version}.${ext}"
     }
-  }
+  },
+  "packageManager": "pnpm@11.25.0"
 }

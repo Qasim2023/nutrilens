@@ -1,5 +1,6 @@
 // Durable analysis snapshots. No entry cap, TTL, or automatic deletion.
 // IndexedDB commits must finish before the UI claims an analysis is saved.
+import { foodPicture, validFoodVisual } from './food-picture.js';
 import { normalizeLanguage } from './languages.js';
 import { cleanEstimateNotes } from './estimate-notes.js';
 export const HISTORY_KEY = 'nutrilens.history.v1';
@@ -17,7 +18,7 @@ export function historySnapshot(entry) {
   const result = copy(entry.result);
   result.confidence_notes=cleanEstimateNotes(result.confidence_notes);
   const itemFields = ['name','quantity','grams','calories','protein_g','carbs_g','fat_g','fiber_g','sugar_g','sodium_mg'];
-  result.items = result.items.map(item => Object.fromEntries(itemFields.filter(key=>Object.hasOwn(item,key)).map(key=>[key,item[key]])));
+  result.items = result.items.map(item => ({...Object.fromEntries(itemFields.filter(key=>Object.hasOwn(item,key)).map(key=>[key,item[key]])), ...(validFoodVisual(item.visual_food) ? {visual_food:item.visual_food} : {})}));
   // Never persist arbitrary result metadata or client settings (keys/headers).
   result.meta = { ...(result.meta?.language!==undefined?{language:normalizeLanguage(result.meta.language)}:{}), model: typeof result.meta?.model === 'string' ? result.meta.model : String(entry.model || ''), protocol: String(result.meta?.protocol || ''), attachments: Array.isArray(result.meta?.attachments) ? result.meta.attachments.filter(name=>typeof name==='string') : [], ...(result.meta?.demo !== undefined ? { demo:!!result.meta.demo } : {}) };
   const view=plain(entry.view) ? entry.view : {};
@@ -28,7 +29,7 @@ export function historySnapshot(entry) {
 }
 
 function metadata(entry) {
-  return { id:entry.id,when:entry.when,dish:entry.dish,calories:entry.calories,confidence:typeof entry.result?.confidence==='number' && Number.isFinite(entry.result.confidence) ? entry.result.confidence : null,model:entry.model,thumb:entry.thumb,summary:entry.summary,legacy:entry.legacy };
+  return { id:entry.id,when:entry.when,dish:entry.dish,calories:entry.calories,confidence:typeof entry.result?.confidence==='number' && Number.isFinite(entry.result.confidence) ? entry.result.confidence : null,model:entry.model,thumb:entry.thumb,foodPicture:entry.thumb?null:foodPicture(entry.result),summary:entry.summary,legacy:entry.legacy };
 }
 
 export function createHistoryRepository({ indexedDB = globalThis.indexedDB, storage = globalThis.localStorage, name = DB_NAME, notify = () => {} } = {}) {

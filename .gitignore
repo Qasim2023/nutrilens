@@ -4,6 +4,9 @@ Thumbs.db
 *.log
 __pycache__/
 .env
+.env.*
+!.env.example
+.netlify/
 .vscode/
 .pnpm-store/
 
@@ -18,3 +21,23 @@ artifacts/desktop-test-profile-*/
 artifacts/desktop-smoke*.log
 artifacts/desktop-test.log
 artifacts/desktop-smoke.png
+
+# Local Netlify packages and verification output
+artifacts/netlify-*
+artifacts/nutrilens-netlify.zip
+# Personal exported meal data must not be committed
+nutrilens-all-meals-*.json
+nutrilens-full-history-*.json
+
+# Synthetic security UI verification screenshots
+artifacts/security-*.png
+
+# Local deployment state, verification output and browser profiles are never source.
+.vercel/
+artifacts/
+*.pem
+*.key
+*.p12
+*.pfx
+# Meal/history/diary/backup exports may contain personal photos and free text.
+nutrilens-*.json

@@ -4,27 +4,27 @@ A lightweight food nutrition app with photo and text input, configurable AI prov
 
 ## Run
 
-Node.js 22.13 or newer is required. Dependencies are already installed in this workspace. On a new checkout, install them first:
+Node.js 22.13 or newer is required. Install the pinned dependencies on a new checkout:
 
 ```powershell
-npm install
+pnpm install --frozen-lockfile
 node server.mjs
 ```
 
 Open `http://localhost:5173/`. To use another port: `node server.mjs 8080`.
 **Do not double-click index.html:** ES modules and the local relay need an HTTP server.
 
-## Your WikiVibe endpoint
+## Bring your own API
 
-The app is configured for `https://api.wikivibe.ru/v1`.
+The app ships with no API key, account, default endpoint or selected model. Each visitor must configure their own connection. Public provider presets are optional conveniences, not shared credentials.
 
-1. Open **Settings**. Enter your provider key in the masked API key field (never share it in chat).
-2. Keep **Connection method → Local relay**. This avoids the provider's browser CORS restrictions.
+1. Open **Settings**. Choose a provider preset or enter your own API URL, then enter your own key in the masked field.
+2. On Vercel, use **Direct browser requests** (enforced by the static build). Your HTTPS provider must allow browser CORS. Local development can use the loopback relay.
 3. Click **Fetch available models**, then choose an actual model ID from the dropdown.
 4. Click **Test connection**. This sends a small prompt and may consume provider quota.
 5. Attach a photo and/or describe food, then click **Analyse**. Use a vision-capable model for photos.
 
-Settings save automatically. Existing keys, chosen model IDs, appearance and history are preserved when upgrading. Legacy saved analyses are migrated into durable history on first load. The endpoint requested for this project is applied once; later customizations are not overwritten.
+Preferences save in this browser; keys and custom headers remain tab-scoped. Existing visitor settings and local history are preserved when upgrading, and migrations never inject a maintainer endpoint. No browser data is copied into a deployment.
 
 ## Compatibility
 
@@ -39,15 +39,15 @@ Settings save automatically. Existing keys, chosen model IDs, appearance and his
 
 ## Privacy and relay security
 
-Your API key is stored in browser localStorage. This is convenient for local/personal use but is not an encrypted vault; anyone with access to that browser profile can access it. The local server forwards the key and food data to your chosen provider, does not persist credentials, and does not log request bodies. Your provider's data and billing policies still apply.
+Your API key and custom headers are kept in tab-scoped sessionStorage, not persistent localStorage settings. Reload retains them; a new independent tab needs credentials. Browser session restoration may retain them. This is not an encrypted vault: same-origin JavaScript, extensions, or someone controlling the browser profile can still access them. The local server forwards the key and food data to your chosen provider, does not persist credentials, and does not log request bodies. Your provider's data and billing policies still apply.
 
 The server binds only to `127.0.0.1`. Relay requests require the app's exact origin plus a custom header. Upstream redirects are refused; other origins and non-API paths are rejected. Only public app assets are served (not `.env` or server source).
 
-WikiVibe and the listed provider/local-runner origins are trusted by default. For another custom provider, explicitly trust its origin before starting the server:
+The listed public provider/local-runner origins are trusted by default. For another custom provider, explicitly trust its origin before starting the server:
 
 ```powershell
 $env:NUTRILENS_ALLOWED_ORIGINS = "https://your-provider.example"
-npm install
+pnpm install --frozen-lockfile
 node server.mjs
 ```
 
@@ -138,6 +138,28 @@ Open **Settings → Language** to choose Norwegian Bokmål, English, Polish, Ger
 
 Analysis and blank-calorie Diary entries use the configured AI model’s food knowledge and best judgment. The app does not search nutrition websites or cross-check external nutrition databases. Calories, macros and micronutrients remain estimates; check quantities, preparation and portion assumptions. Manual diary calories bypass the AI. Existing saved results and diary meals retain their nutrition values, without source badges or comparison panels.
 
+## Deploy to Vercel
+
+See [VERCEL.md](VERCEL.md) for the deployment checklist. Import this repository in Vercel with **Other** as the framework preset and Node.js **24.x**. The checked-in configuration installs pinned dependencies, runs regression tests and publishes only the allowlisted static `dist/` output.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm run build:vercel
+```
+
+Do not add your provider API key to Vercel environment variables or the repository. Every visitor enters their own HTTPS/CORS-compatible API URL, key and model in Settings. The hosted site has no shared backend or API credentials; manual diary entries still work without AI. Local screenshots, meal backups and verification artifacts are excluded from Git.
+
+## Deploy to Netlify for personal use
+
+See [NETLIFY.md](NETLIFY.md) for Git-based or manual deployment, private visitor access, API-key safety, local-data migration and the final live-site checklist.
+
+```sh
+ppnpm install --frozen-lockfile --frozen-lockfile
+pnpm run build:netlify
+```
+
+The checked-in `netlify.toml` selects Node 24 and publishes **only `dist/`**; `package.json` pins pnpm 11.25.0. The build runs tests and includes security headers and bundled document readers. It does not deploy the local relay or embed an API key. Enable private visitor access in Netlify yourself, then enter a personal HTTPS/CORS-compatible provider in the app's Settings. Export the new all-meals backup before changing site address; it includes analyses and diary entries, but no settings or credential fields.
+
 ## Deploy to GitHub Pages
 
 The repository includes `.github/workflows/pages.yml`. It builds a static-only
@@ -149,8 +171,7 @@ run from the Actions tab.
 2. In the GitHub repository, open **Settings → Pages** and select
    **GitHub Actions** as the source.
 3. Push to `main` or use **Actions → Deploy NutriLens to GitHub Pages → Run workflow**.
-4. Open the URL shown by the successful deployment. For the current repository,
-   the default URL is `https://sato2023.github.io/nutrilens/`.
+4. Open the URL shown by the successful deployment.
 5. Open the app's Settings and enter your own provider URL, model, and API key.
 
 ### Static-hosting behavior
@@ -164,7 +185,7 @@ run from the Actions tab.
   GitHub Pages cannot run `server.mjs` or its `/api/relay` endpoint. If the provider
   blocks browser requests, configure a separately hosted trusted authenticated
   proxy as the API endpoint; do not put a shared proxy secret in the site.
-- Each user's API key stays in that browser's localStorage and is sent to the
+- Each user's API key stays in that tab's sessionStorage and is sent to the
   configured endpoint. There is no server-side secret storage on the static site.
   Use a personal restricted key, not a shared production credential.
 - Settings, meal history, and diary data are browser-local, not synced between
@@ -174,7 +195,7 @@ run from the Actions tab.
 ### Verify before deployment
 
 ```sh
-pnpm install --frozen-lockfile
+ppnpm install --frozen-lockfile --frozen-lockfile
 pnpm test
 pnpm run build:pages
 ```
@@ -200,14 +221,14 @@ Built 64-bit Windows executables are in `release/`:
 
 The desktop app includes its own browser runtime and local server. Closing its window stops the server. It uses loopback port **17843** and will report an error rather than open an unrelated service if that port is occupied. Only one NutriLens desktop instance runs at a time.
 
-Open **Settings** on first launch to configure your AI provider, key, and model. Remote AI still needs internet access and any applicable provider account/quota; local providers work when their server is running. Manual diary entries do not require AI. Desktop settings, history, and diary data are saved in the app's Windows user profile, shared by portable and installed launches. The portable EXE is portable software, not portable user data. Data from a regular browser is separate and is not automatically imported. API keys remain in local browser storage, not an encrypted vault.
+Open **Settings** on first launch to configure your AI provider, key, and model. Remote AI still needs internet access and any applicable provider account/quota; local providers work when their server is running. Manual diary entries do not require AI. Desktop settings, history, and diary data are saved in the app's Windows user profile, shared by portable and installed launches. The portable EXE is portable software, not portable user data. Data from a regular browser is separate and is not automatically imported. API keys remain in tab-scoped session storage, not an encrypted vault.
 
 These locally built executables are **not code-signed**, so Windows may show an unknown-publisher or SmartScreen warning. No signing certificate is included.
 
 ### Rebuild and verify
 
 ```powershell
-pnpm install
+ppnpm install --frozen-lockfile
 pnpm run desktop            # run the desktop app from source
 pnpm run build:desktop      # generate installer and portable EXE
 pnpm run test:desktop       # test the packaged app in an isolated profile
@@ -221,3 +242,7 @@ node scripts/test-desktop.mjs release/NutriLens-Portable-1.0.0.exe
 ```
 
 `desktop/main.mjs` is the sandboxed desktop launcher; `package.json` contains the packaging configuration. To recreate the Windows icon from the existing NutriLens design, run `scripts/build-desktop-icon.ps1`.
+
+## Security hardening
+
+See [SECURITY.md](SECURITY.md) for implemented protections, encrypted backup instructions, credential migration, the known dependency advisory, and requirements before adding public accounts or a SQL backend. Choose **Download encrypted backup** for password-protected meal exports. Live browser meal data and the legacy JSON download remain unencrypted. Run `npm test` and `npm run build:netlify` before redeploying.

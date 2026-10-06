@@ -11,9 +11,10 @@ import { compressImage, makeThumbnail, formatBytes } from "./image.js";
 import { demoAnalyze } from "./demo.js";
 import { readAttachment, fitsAttachmentBudget, MAX_ATTACHMENTS } from "./attachments.js";
 import { shouldAnalyzeOnEnter } from "./keyboard.js";
+import { initFooter } from "./footer.js";
 import { initDiary } from "./diary.js";
 import { createHistoryRepository } from "./history-store.js";
-import { initMealLibrary, diaryAnalysisSelection, diaryRequestText } from "./meal-library.js";
+import { initMealLibrary, diaryRequestText } from "./meal-library.js";
 let diary, mealLibrary;
 let historyChannel;
 const historyRepository = createHistoryRepository({ notify: () => { historyChannel?.postMessage('changed'); mealLibrary?.refresh(); } });
@@ -204,7 +205,7 @@ function renderAnalysisOrigin() {
   const host=$("#analysis-origin");
   const context=state.diaryContext;
   host.hidden=!context;
-  if(context)host.innerHTML='<span>'+esc('Diary meal: '+context.name)+'</span><small>The diary is unchanged. Press Analyse for a detailed breakdown of this description.</small><button class="btn btn-ghost btn-sm" type="button" id="detach-diary">Unlink</button>';
+  if(context)host.innerHTML='<span>'+esc('Diary meal: '+context.name)+'</span><small>Detailed nutrition for this diary meal. Its logged calories stay unchanged.</small><button class="btn btn-ghost btn-sm" type="button" id="detach-diary">Unlink</button>';
   $("#detach-diary")?.addEventListener('click',()=>{state.diaryContext=null;renderAnalysisOrigin();});
 }
 
@@ -224,18 +225,19 @@ function prepareAnalysis(input, label) {
 }
 
 function selectDiaryMeal(entry) {
-  try {const selection=diaryAnalysisSelection(entry);prepareAnalysis({text:selection.text,diaryContext:selection.diaryContext},'Diary meal loaded. Press Analyse to get its full nutritional breakdown.');}
-  catch(error){toast(error.message,'error');}
+  if(entry)diary.showNutrition(entry.id);
 }
 
 function displaySavedAnalysis(entry) {
   if(state.busy || state.readingAttachments){toast('Finish the current request first.');return;}
+  state.diaryContext=entry.input?.diaryContext ? structuredClone(entry.input.diaryContext) : null;
+  renderAnalysisOrigin();
   diary.showAnalysis();state.last=structuredClone(entry.result);state.lastImageUrl=entry.view.imageUrl;
   state.lastRenderOptions=structuredClone(entry.view);state.lastInput=structuredClone(entry.input);
   state.lastSavedEntry=entry;state.viewingSaved=true;
   $("#result").innerHTML=renderResult(state.last,state.lastRenderOptions);
   $("#saved-analysis-banner").hidden=false;
-  $("#saved-analysis-banner").innerHTML='<div><strong>'+esc('Saved analysis · '+new Date(entry.when).toLocaleString())+'</strong><small>'+esc(entry.legacy ? 'Imported original result. Older records may have only a thumbnail or lack recipe input. Viewing does not call AI.' : 'Original full result restored. Viewing uses no AI and never changes or removes this record.')+'</small></div><button class="btn btn-sm" type="button" id="saved-reanalyse">Analyse again</button>';
+  $("#saved-analysis-banner").innerHTML='<div><strong>'+esc('Saved analysis · '+new Date(entry.when).toLocaleString())+'</strong><small>'+esc(entry.legacy ? 'Imported original result. Older records may have only a thumbnail or lack recipe input. Viewing does not run another analysis.' : 'Original full result restored. Viewing never reruns the analysis or changes this record.')+'</small></div><button class="btn btn-sm" type="button" id="saved-reanalyse">Analyse again</button>';
   $("#saved-reanalyse").addEventListener('click',()=>prepareSavedAnalysis(entry));
   $("#history-save-status").hidden=true;
   wireResultActions();mealLibrary?.setActive(entry.id);
@@ -268,6 +270,7 @@ async function saveLastAnalysis() {
 }
 
 async function runAnalysis() {
+  if(diary?.isBusy()){toast("Finish or cancel the current diary analysis first.");return;}
   if (state.busy) return;
   if (state.readingAttachments) { toast("Wait for your files to finish reading before analysing."); return; }
   const text = $("#input").value.trim();
@@ -324,6 +327,10 @@ async function runAnalysis() {
       });
     }
 
+    // Only attach results for the unchanged diary description, never unrelated input.
+    if(originalInput.diaryContext && text===originalInput.diaryContext.name && !image && !originalInput.attachments.length && !result.meta?.demo) {
+      diary.rememberAnalysis(originalInput.diaryContext,result);
+    }
     state.last = result;
     state.lastImageUrl = image ? image.dataUrl : null;
     state.lastInput = originalInput;state.viewingSaved=false;
@@ -335,7 +342,7 @@ async function runAnalysis() {
       state.lastSavedEntry={version:2,id:crypto.randomUUID(),when:Date.now(),dish:result.dish,model:settings.model,thumb,text,input:originalInput,result:structuredClone(result),view:structuredClone(state.lastRenderOptions)};
       await saveLastAnalysis();
     } else state.lastSavedEntry=null;
-    if (useDemo) toast("Demo estimate shown. Add an API key in Settings for real AI analysis.", "info", 6000);
+    if (useDemo) toast("Demo estimate shown. Add an API key in Settings to analyse your food.", "info", 6000);
   } catch (err) {
     if (err?.name === "AbortError") {
       resultHost.innerHTML = `<div class="card"><div class="empty"><p>Analysis cancelled. Your photo and description are still available.</p></div></div>`;
@@ -369,7 +376,7 @@ function setBusyUI(busy) {
 
 function wireResultActions() {
   $$('#result [data-action]').forEach((btn) => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const action = btn.dataset.action;
       if (action === "open-settings") openDrawer();
       else if (action === "retry") runAnalysis();
@@ -377,7 +384,11 @@ function wireResultActions() {
       else if (action === "download-md") exportResult("md");
       else if (action === "download-csv") exportResult("csv");
       else if (action === "print") window.print();
-      else if (action === "log-diary") diary.prepareResult(state.last);
+      else if (action === "log-diary") {
+        const result = state.last;
+        const thumb = state.lastImageUrl ? await makeThumbnail(state.lastImageUrl) : null;
+        diary.prepareResult(result, {thumb});
+      }
       else if (action === "analyse-again" && state.lastInput) prepareSavedAnalysis(state.lastSavedEntry || {input:state.lastInput,dish:state.last.dish,result:state.last});
     };
   });
@@ -498,7 +509,7 @@ function updateProviderHint() {
   if (!hint) return;
   const bits = [];
   if (preset.auth === "none") bits.push("This provider normally runs locally and needs no API key.");
-  if (p === "custom") bits.push("Any OpenAI-compatible <code>/chat/completions</code> endpoint works.");
+  if (p === "custom") bits.push("Use a compatible <code>/chat/completions</code> endpoint.");
   if (p === "azure") bits.push("Replace the resource and deployment placeholders in the base URL. An <code>api-version</code> query is appended automatically.");
   if (p === "openrouter") bits.push("Use <code>openrouter.ai/api/v1</code>; vision models start with e.g. <code>openai/gpt-4o</code>.");
   if (!bits.length) bits.push("Fetch your provider’s model list, select a model, then test the connection.");
@@ -763,7 +774,7 @@ function decorateStaticIcons() {
     const el = document.querySelector(sel);
     if (el) el.innerHTML = icon;
   }
-  const heroIcons = [ICONS.leaf, ICONS.spark, ICONS.bolt, ICONS.download];
+  const heroIcons = [ICONS.leaf, ICONS.bolt, ICONS.download];
   document.querySelectorAll(".hero-chips .chip .icon-slot, .hero-chips .chip svg").forEach((el, i) => {
     if (el.classList.contains("icon-slot")) el.innerHTML = heroIcons[i % heroIcons.length];
   });
@@ -783,10 +794,11 @@ function boot() {
   }
   updateKeyVisibility();
 
-  diary = initDiary({ toast, getSettings: currentSettings, onAnalyseEntry: selectDiaryMeal });
+  diary = initDiary({ toast, getSettings: currentSettings, isAnalysisBusy:()=>state.busy || state.readingAttachments });
   mealLibrary = initMealLibrary({history:historyRepository,onOpenAnalysis:displaySavedAnalysis,onChooseDiary:selectDiaryMeal,onReanalyse:prepareSavedAnalysis,onBeforeOpen:()=>{if($("#drawer").classList.contains('open'))closeDrawer();diary.showAnalysis();},onAllDeleted:source=>{if(source==='history'){state.lastSavedEntry=null;state.viewingSaved=false;$("#saved-analysis-banner").hidden=true;$("#history-save-status").hidden=true;}else{state.diaryContext=null;renderAnalysisOrigin();}},isBusy:()=>state.busy || state.readingAttachments || diary.isBusy(),toast});
   if(typeof BroadcastChannel !== 'undefined'){historyChannel=new BroadcastChannel('nutrilens-history');historyChannel.onmessage=()=>mealLibrary.refresh();}
   wireEvents();
+  initFooter();
 
   // Show a friendly empty state in the results area.
   $("#result").innerHTML = `<div class="card"><div class="empty">${ICONS.spark}<p>Attach a photo, add a recipe file, or describe a meal, then hit <strong>Analyse</strong>.<br>Results appear here with calories, macros, micronutrients and a health score.</p></div></div>`;
@@ -808,7 +820,8 @@ function updateComposerHint() {
   const host = document.querySelector("#result .card .empty p");
   if (!host) return;
   document.querySelector('#connection-hint')?.remove();
-  const line = state.settings.demoMode ? 'Demo mode: sample data only — photos are not analysed.' : hasRemoteModel() ? 'Ready to use your configured model. Press Analyse to send the request.' : 'Open Settings, add your API key and fetch/select a model. No demo results are substituted.';
+  if (!state.settings.demoMode && hasRemoteModel()) return;
+  const line = state.settings.demoMode ? 'Demo mode: sample data only — photos are not analysed.' : 'Open Settings, add your API key and fetch/select a model. No demo results are substituted.';
   host.insertAdjacentHTML('afterend', '<div class="status-line" id="connection-hint" style="justify-content:center;margin-top:14px"><span>' + esc(line) + '</span></div>');
 }
 

@@ -7,7 +7,7 @@ import { analyzeFood, testConnection, listModels } from '../src/ai.js';
 import { normalize } from '../src/ai.js';
 import { createAppServer } from '../server.mjs';
 
-const settings = { baseUrl: 'https://api.wikivibe.ru/v1', provider: 'wikivibe', apiKey: 'test-secret', auth: 'bearer', model: 'vision-model', apiFormat: 'auto', transport: 'direct', jsonMode: true };
+const settings = { baseUrl: 'https://provider.example/v1', provider: 'custom', apiKey: 'test-secret', auth: 'bearer', model: 'vision-model', apiFormat: 'auto', transport: 'direct', jsonMode: true };
 const good = { dish: 'Apple', summary: 'One apple', confidence: 0, items: [{ name: 'Apple', grams:100, calories: 95, quantity: '1 apple' }], total: { calories: 95, protein_g: 0.5, carbs_g: 25, fat_g: 0.3 }, health_score: 85 };
 const chat = text => ({ choices: [{ message: { content: text } }] });
 async function fakeFetch(t, fn, action) {
@@ -18,9 +18,9 @@ async function fakeFetch(t, fn, action) {
 const jsonResponse = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
 
 test('normalizes base/full/trailing slash URLs and preserves query strings', () => {
-  assert.equal(endpointUrl(settings.baseUrl), 'https://api.wikivibe.ru/v1/chat/completions');
-  assert.equal(endpointUrl(settings.baseUrl + '///'), 'https://api.wikivibe.ru/v1/chat/completions');
-  assert.equal(endpointUrl(settings.baseUrl + '/chat/completions?token=1'), 'https://api.wikivibe.ru/v1/chat/completions?token=1');
+  assert.equal(endpointUrl(settings.baseUrl), 'https://provider.example/v1/chat/completions');
+  assert.equal(endpointUrl(settings.baseUrl + '///'), 'https://provider.example/v1/chat/completions');
+  assert.equal(endpointUrl(settings.baseUrl + '/chat/completions?token=1'), 'https://provider.example/v1/chat/completions?token=1');
   assert.equal(endpointUrl(settings.baseUrl + '/responses', 'custom', 'auto', 'auto'), settings.baseUrl + '/responses');
   assert.equal(endpointUrl(settings.baseUrl + '/chat/completions', 'custom', 'auto', 'responses'), settings.baseUrl + '/responses');
   assert.equal(modelsUrl({ ...settings, baseUrl: settings.baseUrl + '/responses?x=1' }), settings.baseUrl + '/models?x=1');
@@ -125,14 +125,14 @@ test('cancellation stays AbortError', async t => {
   });
 });
 
-test('migrates endpoint without losing credentials, chosen model or appearance', async () => {
+test('migrates preferences without replacing a visitor endpoint, credentials, model or appearance', async () => {
   const original = globalThis.localStorage;
   const storage = new Map([['nutrilens.settings.v1', JSON.stringify({ provider: 'custom', baseUrl: 'https://old.test/v1', model: 'my-model', apiKey: 'keep-me', accent: 'violet' })]]);
   globalThis.localStorage = { getItem: k => storage.get(k), setItem: (k,v) => storage.set(k,v) };
   try {
     const { loadSettings } = await import('../src/store.js');
     const loaded = loadSettings();
-    assert.equal(loaded.baseUrl, settings.baseUrl);
+    assert.equal(loaded.baseUrl, 'https://old.test/v1');
     assert.equal(loaded.apiKey, 'keep-me');
     assert.equal(loaded.model, 'my-model');
     assert.equal(loaded.accent, 'violet');

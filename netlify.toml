@@ -1,0 +1,15 @@
+# Personal-use static deployment. No API key or other secret belongs in this file.
+[build]
+  command = "pnpm run build:netlify"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+  # pnpm is pinned by package.json packageManager (Netlify/Corepack).
+  PNPM_FLAGS = "--frozen-lockfile"
+  ELECTRON_SKIP_BINARY_DOWNLOAD = "1"
+
+# Security and cache headers are generated in dist/_headers so they also work
+# when uploading dist directly. No wildcard SPA rewrite: missing assets stay 404.
+# Private visitor access must be enabled in the Netlify dashboard; this file
+# does not make the site private and does not contain a client-side password gate.

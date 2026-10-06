@@ -1,8 +1,10 @@
+import { historySnapshot, safeImage } from './history-store.js';
 import { cleanEstimateNotes } from './estimate-notes.js';
 // Independent local diary storage: never sent to an AI endpoint.
 export const DIARY_KEY = 'nutrilens.diary.v1';
 export const MEALS = [ ['breakfast','Breakfast'], ['lunch','Lunch'], ['dinner','Dinner'], ['snack','Snacks'], ['other','Other'] ];
 export const MAX_CALORIES = 100000;
+export const diaryThumbnail = value => typeof value === 'string' && value.length <= 120000 ? safeImage(value) : null;
 
 export function localDay(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -39,12 +41,29 @@ export function diaryConfidence(value) {
   return typeof value==='number' && Number.isFinite(value) && value>=0 && value<=1 ? value : null;
 }
 
+// Keep a detached, credential-free full result; legacy entries simply have no snapshot.
+export function diaryAnalysis(result) {
+  if (!result || result.meta?.demo) return null;
+  try { return historySnapshot({id:'diary-analysis',when:0,result}).result; }
+  catch { return null; }
+}
+
+export function cacheDiaryAnalysis(entries, context, result, now = Date.now()) {
+  const entry=entries.find(item=>item.id===context?.id);
+  if (!entry || entry.name!==context.name || entry.calories!==context.calories) return entries;
+  const analysis=diaryAnalysis(result);
+  if (!analysis) return entries;
+  return entries.map(item=>item.id===entry.id ? {...item,analysis,updatedAt:now} : item);
+}
+
 export function createEntry(input, { id = crypto.randomUUID(), now = Date.now() } = {}) {
   if (!validDay(input.date)) throw new Error('Choose a valid diary date.');
   if (!MEALS.some(([key])=>key===input.meal)) throw new Error('Choose a meal category.');
   const rawName = String(input.name || '').trim();
   if (rawName.length > 160) throw new Error('Food names must be 160 characters or fewer.');
-  return { id, date: input.date, name: rawName || 'Calorie entry', meal: input.meal, calories: validateCalories(input.calories), source: input.source === 'ai' ? 'ai' : 'manual', confidence: input.source==='ai' ? diaryConfidence(input.confidence) : null, nutrients: input.source==='ai' && input.nutrients && typeof input.nutrients==='object' ? Object.fromEntries(['calories','protein_g','carbs_g','fat_g','fiber_g','sugar_g','sodium_mg'].filter(k=>input.nutrients[k]===null||typeof input.nutrients[k]==='number'&&Number.isFinite(input.nutrients[k])&&input.nutrients[k]>=0).map(k=>[k,input.nutrients[k]])) : null, estimateNotes: input.source === 'ai' && typeof input.estimateNotes === 'string' ? cleanEstimateNotes(input.estimateNotes).slice(0,800) : '', createdAt: now, updatedAt: now };
+  // Keep only compact local raster thumbnails; never persist remote image URLs.
+  const thumb = diaryThumbnail(input.thumb);
+  return { id, ...(thumb ? {thumb} : {}), analysis: diaryAnalysis(input.analysis), date: input.date, name: rawName || 'Calorie entry', meal: input.meal, calories: validateCalories(input.calories), source: input.source === 'ai' ? 'ai' : 'manual', confidence: input.source==='ai' ? diaryConfidence(input.confidence) : null, nutrients: input.source==='ai' && input.nutrients && typeof input.nutrients==='object' ? Object.fromEntries(['calories','protein_g','carbs_g','fat_g','fiber_g','sugar_g','sodium_mg'].filter(k=>input.nutrients[k]===null||typeof input.nutrients[k]==='number'&&Number.isFinite(input.nutrients[k])&&input.nutrients[k]>=0).map(k=>[k,input.nutrients[k]])) : null, estimateNotes: input.source === 'ai' && typeof input.estimateNotes === 'string' ? cleanEstimateNotes(input.estimateNotes).slice(0,800) : '', createdAt: now, updatedAt: now };
 }
 
 export function dayEntries(entries, date) {

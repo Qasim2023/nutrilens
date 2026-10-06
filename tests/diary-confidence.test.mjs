@@ -9,19 +9,19 @@ test('diary confidence accepts only finite scores in the model’s 0–1 range',
   for(const value of [0,.87,1])assert.equal(diaryConfidence(value),value);
   for(const value of [null,undefined,'0.87','',NaN,Infinity,-.1,1.1,87,{}])assert.equal(diaryConfidence(value),null);
 });
-test('AI confidence survives saving and reloading without changing calories',()=>{
+test('Estimate confidence survives saving and reloading without changing calories',()=>{
   const data=new Map(),storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
   const entry=createEntry(input,{id:'meal',now:100});saveDiary([entry],storage);
   assert.equal(loadDiary(storage)[0].confidence,.87);assert.equal(loadDiary(storage)[0].calories,420);
   const legacy={...entry};delete legacy.confidence;saveDiary([legacy],storage);
   assert.equal(loadDiary(storage)[0].confidence,null);
-  assert.match(renderDiaryConfidence(loadDiary(storage)[0]),/AI confidence unavailable/);
+  assert.match(renderDiaryConfidence(loadDiary(storage)[0]),/Estimate confidence unavailable/);
 });
 test('confidence badges distinguish AI estimates, genuine zero scores, missing scores and manual calories',()=>{
-  assert.match(renderDiaryConfidence(createEntry(input)),/87% AI confidence/);
-  assert.match(renderDiaryConfidence(createEntry({...input,confidence:0})),/0% AI confidence/);
-  assert.match(renderDiaryConfidence(createEntry({...input,confidence:1})),/100% AI confidence/);
-  assert.match(renderDiaryConfidence(createEntry({...input,confidence:'<img src=x>'})),/AI confidence unavailable/);
+  assert.match(renderDiaryConfidence(createEntry(input)),/87% estimate confidence/);
+  assert.match(renderDiaryConfidence(createEntry({...input,confidence:0})),/0% estimate confidence/);
+  assert.match(renderDiaryConfidence(createEntry({...input,confidence:1})),/100% estimate confidence/);
+  assert.match(renderDiaryConfidence(createEntry({...input,confidence:'<img src=x>'})),/Estimate confidence unavailable/);
   const manual=createEntry({...input,source:'manual'});assert.equal(manual.confidence,null);assert.equal(renderDiaryConfidence(manual),'');
 });
 test('unchanged estimated meals retain confidence; manual calorie or food edits remove stale scores',async()=>{
@@ -44,7 +44,7 @@ test('confidence color bands match the visible rounded score, including boundari
   for(const [confidence,percent,level] of [[1,100,'high'],[.87,87,'high'],[.7,70,'high'],[.695,70,'high'],[.694,69,'medium'],[.4,40,'medium'],[.395,40,'medium'],[.394,39,'low'],[.01,1,'low'],[0,0,'low']]){
     const badge=renderDiaryConfidence({...input,confidence});
     assert.match(badge,new RegExp('diary-confidence-'+level));
-    assert.match(badge,new RegExp(percent+'% AI confidence'));
+    assert.match(badge,new RegExp(percent+'% estimate confidence'));
   }
   for(const confidence of [null,undefined,-1,2,NaN,'80']){
     const badge=renderDiaryConfidence({...input,confidence});

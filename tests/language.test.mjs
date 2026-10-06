@@ -42,7 +42,7 @@ test('locale and dynamic label translation switch without modifying unknown food
   for(const language of LANGUAGES){setLanguage(language.code);assert.equal(getLocale(),language.locale);}
   assert.equal(translate('2 eggs and toast','hi'),'2 eggs and toast');
   assert.equal(translate('2 entries logged','nb'),'2 oppføringer logget');
-  assert.equal(translate('88% AI confidence','de'),'88% KI-Konfidenz');
+  assert.equal(translate('88% estimate confidence','de'),'88% Konfidenz der Schätzung');
   assert.equal(translate('Protein 12 g · Carbs 5 g','nb'),'Protein 12 g · Karbohydrater 5 g');
   setLanguage('en');assert.equal(translate(' Settings '),' Settings ');
 });

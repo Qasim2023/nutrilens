@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
+import {fileURLToPath} from 'node:url';
 import {extractBrowserDocument} from '../src/browser-documents.js';
 import {isStaticHosting, effectiveTransport} from '../src/hosting.js';
 import {buildPages} from '../scripts/build-pages.mjs';
@@ -47,8 +49,8 @@ test('tagged document errors reject and terminate the worker', async t => {
 });
 
 test('GitHub Pages forces direct requests, while the local server retains relay support', () => {
-  assert.equal(isStaticHosting({hostname: 'sato2023.github.io'}), true);
-  assert.equal(effectiveTransport({transport: 'relay'}, {hostname: 'sato2023.github.io'}), 'direct');
+  assert.equal(isStaticHosting({hostname: 'example.github.io'}), true);
+  assert.equal(effectiveTransport({transport: 'relay'}, {hostname: 'example.github.io'}), 'direct');
   assert.equal(isStaticHosting({hostname: 'github.io.evil.test'}), false);
   assert.equal(effectiveTransport({transport: 'relay'}, {hostname: 'localhost'}), 'relay');
 });
@@ -56,7 +58,7 @@ test('GitHub Pages forces direct requests, while the local server retains relay 
 test('legacy settings migration returns direct transport on GitHub Pages', async () => {
   const oldLocation = globalThis.location, oldStorage = globalThis.localStorage;
   const storage = new Map([['nutrilens.settings.v1', JSON.stringify({apiKey: 'user-owned-test-key'})]]);
-  globalThis.location = {hostname: 'sato2023.github.io'};
+  globalThis.location = {hostname: 'example.github.io'};
   globalThis.localStorage = {getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value)};
   try {
     const {loadSettings} = await import('../src/store.js');
@@ -69,9 +71,16 @@ test('legacy settings migration returns direct transport on GitHub Pages', async
 });
 
 test('Pages artifact includes local parsers and static mode, but excludes backend and workspace files', async () => {
-  const {output, files} = await buildPages();
-  for (const name of ['index.html', '.nojekyll', 'vendor/mammoth/mammoth.browser.min.js', 'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs']) assert.ok(files.includes(name), name);
-  assert.match(await fs.readFile(path.join(output, 'src/hosting-config.js'), 'utf8'), /STATIC_HOSTING = true/);
-  assert.equal(files.some(name => /^(server|tests|artifacts|\.git|\.env|node_modules)(\/|\.|$)/.test(name)), false);
-  await assert.rejects(buildPages({outputDirectory: path.dirname(output)}), /project root/);
+  // Tests must never replace the real deployment output before a test-first build passes.
+  const tempRoot=path.resolve(os.tmpdir()),temp=await fs.mkdtemp(path.join(tempRoot,'nutrilens-pages-test-'));
+  try {
+    const {output, files} = await buildPages({outputDirectory:path.join(temp,'site')});
+    for (const name of ['index.html', '.nojekyll', 'vendor/mammoth/mammoth.browser.min.js', 'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs']) assert.ok(files.includes(name), name);
+    assert.match(await fs.readFile(path.join(output, 'src/hosting-config.js'), 'utf8'), /STATIC_HOSTING = true/);
+    assert.equal(files.some(name => /^(server|tests|artifacts|\.git|\.env|node_modules)(\/|\.|$)/.test(name)), false);
+    await assert.rejects(buildPages({outputDirectory:fileURLToPath(new URL('../',import.meta.url))}), /project root/);
+  } finally {
+    if(!temp.startsWith(tempRoot+path.sep)||!path.basename(temp).startsWith('nutrilens-pages-test-'))throw new Error('Unsafe test cleanup path');
+    await fs.rm(temp,{recursive:true,force:true});
+  }
 });

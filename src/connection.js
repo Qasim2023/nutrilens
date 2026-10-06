@@ -1,7 +1,9 @@
 import { effectiveTransport, isStaticHosting } from "./hosting.js";
+import {validateEndpoint, validateHeader} from "./security-policy.js";
 
 // URL handling and transport shared by connection tests, model discovery and analysis.
-export const CUSTOM_ENDPOINT = "https://api.wikivibe.ru/v1";
+// Fresh installs have no provider endpoint or account-specific configuration.
+export const CUSTOM_ENDPOINT = "";
 
 export function endpointUrl(baseUrl, provider, mode = "auto", protocol = "chat") {
   let url;
@@ -40,6 +42,7 @@ export function buildHeaders(settings) {
     headers["HTTP-Referer"] = typeof location !== "undefined" ? location.origin : "http://localhost";
     headers["X-Title"] = "NutriLens";
   }
+  for (const [name, value] of Object.entries(headers)) validateHeader(name, value);
   return headers;
 }
 
@@ -84,6 +87,7 @@ export function parseEventStream(text) {
 }
 
 export async function requestJson(settings, url, { method = "POST", body, signal } = {}) {
+  validateEndpoint(url, {hosted:globalThis.location?.protocol === 'https:'});
   const timeout = AbortSignal.timeout(120000);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
   const useRelay = effectiveTransport(settings) !== "direct" && typeof location !== "undefined" && /^https?:$/.test(location.protocol);
@@ -91,14 +95,36 @@ export async function requestJson(settings, url, { method = "POST", body, signal
   try {
     res = await fetch(useRelay ? "/api/relay" : url, useRelay ? {
       method: "POST", headers: { "Content-Type": "application/json", "X-NutriLens-Relay": "1" },
-      body: JSON.stringify({ url, method, headers: buildHeaders(settings), body }), signal: combined,
-    } : { method, headers: buildHeaders(settings), body: body === undefined ? undefined : JSON.stringify(body), signal: combined });
+      body: JSON.stringify({ url, method, headers: buildHeaders(settings), body }), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store",
+    } : { method, headers: buildHeaders(settings), body: body === undefined ? undefined : JSON.stringify(body), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store" });
   } catch (error) {
     if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
     if (timeout.aborted) throw new Error("The endpoint timed out after 120 seconds. Try another model or a smaller request.");
-    throw new Error(isStaticHosting() ? "Could not connect to the AI provider from this static site. Your HTTPS endpoint must allow browser CORS requests from this site. GitHub Pages cannot run the local relay. Use a CORS-enabled provider or your own trusted authenticated proxy; check the endpoint and network." : "Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");
+    throw new Error(isStaticHosting() ? "Could not connect to your provider from this static site. Your HTTPS endpoint must allow browser CORS requests from this site. This static deployment cannot run the local relay. Use a CORS-enabled provider or your own trusted authenticated proxy; check the endpoint and network." : "Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");
   }
-  const text = await res.text();
+  const limit = 24 * 1024 * 1024;
+  if (Number(res.headers.get('content-length')) > limit) {
+    await res.body?.cancel();
+    throw new Error('Provider response is too large (24 MB maximum).');
+  }
+  let text;
+  if (res.body?.getReader) {
+    const reader = res.body.getReader(), decoder = new TextDecoder(), chunks = [];
+    let bytes = 0;
+    try {
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > limit) { await reader.cancel(); throw new Error('Provider response is too large (24 MB maximum).'); }
+        chunks.push(decoder.decode(value, {stream:true}));
+      }
+      chunks.push(decoder.decode()); text = chunks.join('');
+    } finally { reader.releaseLock(); }
+  } else {
+    text = await res.text();
+    if (new TextEncoder().encode(text).length > limit) throw new Error('Provider response is too large (24 MB maximum).');
+  }
   if (!res.ok) {
     let detail = text;
     try { const j = JSON.parse(text); detail = j.error?.message || j.message || j.error || text; } catch {}

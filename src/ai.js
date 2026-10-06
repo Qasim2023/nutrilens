@@ -10,17 +10,16 @@ export const DEFAULT_BASE_URL = CUSTOM_ENDPOINT;
 export const DEFAULT_MODEL = "";
 
 export const PRESETS = {
-  wikivibe: { label: "WikiVibe (your endpoint)", baseUrl: CUSTOM_ENDPOINT, auth: "bearer", keyHeader: "Authorization" },
-  openai:      { label: "OpenAI",        baseUrl: "https://api.openai.com/v1",            auth: "bearer", keyHeader: "Authorization" },
+  openai:      { label: "GPT",        baseUrl: "https://api.openai.com/v1",            auth: "bearer", keyHeader: "Authorization" },
   openrouter:  { label: "OpenRouter",    baseUrl: "https://openrouter.ai/api/v1",         auth: "bearer", keyHeader: "Authorization" },
   groq:        { label: "Groq",          baseUrl: "https://api.groq.com/openai/v1",       auth: "bearer", keyHeader: "Authorization" },
-  together:    { label: "Together AI",   baseUrl: "https://api.together.xyz/v1",          auth: "bearer", keyHeader: "Authorization" },
+  together:    { label: "Together",   baseUrl: "https://api.together.xyz/v1",          auth: "bearer", keyHeader: "Authorization" },
   deepseek:    { label: "DeepSeek",      baseUrl: "https://api.deepseek.com/v1",          auth: "bearer", keyHeader: "Authorization" },
   mistral:     { label: "Mistral",       baseUrl: "https://api.mistral.ai/v1",            auth: "bearer", keyHeader: "Authorization" },
-  xai:         { label: "xAI (Grok)",    baseUrl: "https://api.x.ai/v1",                  auth: "bearer", keyHeader: "Authorization" },
+  xai:         { label: "Grok",    baseUrl: "https://api.x.ai/v1",                  auth: "bearer", keyHeader: "Authorization" },
   ollama:      { label: "Ollama (local)",baseUrl: "http://localhost:11434/v1",            auth: "none",   keyHeader: "Authorization" },
   lmstudio:    { label: "LM Studio",     baseUrl: "http://localhost:1234/v1",             auth: "none",   keyHeader: "Authorization" },
-  azure:       { label: "Azure OpenAI",  baseUrl: "https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT", auth: "api-key", keyHeader: "api-key" },
+  azure:       { label: "Azure",  baseUrl: "https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT", auth: "api-key", keyHeader: "api-key" },
   custom:      { label: "Custom",        baseUrl: "",                                     auth: "bearer", keyHeader: "Authorization" },
 };
 
@@ -40,6 +39,7 @@ export const MODEL_SUGGESTIONS = {
 
 import { analysisLanguageInstruction, translate } from "./i18n.js";
 import { attachmentContext } from "./attachments.js";
+import { FOOD_VISUAL_KEYS, validFoodVisual } from "./food-picture.js";
 import { edibleGrams } from "./food-portion.js";
 
 const SYSTEM_PROMPT = `You are NutriLens, a meticulous nutrition analyst. Given a food photo, a text description, or both, you estimate the nutrition content of exactly what is shown or described.
@@ -62,6 +62,7 @@ JSON SCHEMA (all keys required unless noted):
   "items": [                       // one entry per distinct food/drink component
     {
       "name": string,
+      "visual_food": string,      // optional representative illustration category, choose one of: ${FOOD_VISUAL_KEYS.join(", ")}. Use generic if none fit. This is only for display; never change nutrition or identification to fit a category.
       "quantity": string,          // human readable, e.g. "150 g", "1 cup (240 ml)", "2 slices"
       "grams": number | null,      // total edible grams for this item, not one unit
       "calories": number,          // kcal for this item
@@ -213,6 +214,7 @@ export function normalize(raw, meta = {}) {
     const o = it && typeof it === "object" ? it : {};
     return {
       name: str(o.name, "Unidentified item"),
+      ...(validFoodVisual(o.visual_food) ? { visual_food: o.visual_food } : {}),
       quantity: str(o.quantity),
       grams: edibleGrams(o),
       calories: num(o.calories),

@@ -1,3 +1,6 @@
 allowBuilds:
   electron: true
   electron-winstaller: false
+# Security patch for desktop-build tooling; no major-version dependency changes.
+overrides:
+  'http-cache-semantics@<4.3.0': '4.3.0'

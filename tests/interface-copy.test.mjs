@@ -25,3 +25,45 @@ test('updated introduction is translated in every language, while 123 stays unch
     }
   }
 });
+
+test('configured model hint is removed and diary empty state omits AI',()=>{
+  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  const diary=readFileSync(new URL('../src/diary.js',import.meta.url),'utf8');
+  assert.ok(!app.includes("Ready to use your configured model. Press Analyse to send the request."));
+  assert.ok(app.includes('if (!state.settings.demoMode && hasRemoteModel()) return;'));
+  const message="Enter a food and leave calories blank for an estimate, add a calorie-only amount, or log an analysed meal.";
+  assert.ok(diary.includes(message));
+  assert.ok(!diary.includes("Enter a food and leave calories blank for an AI estimate, add a calorie-only amount, or log an analysed meal."));
+  for(const language of LANGUAGES.filter(l=>l.code!=='en')){
+    assert.ok(TRANSLATIONS[language.code][message]);
+    assert.equal(TRANSLATIONS[language.code]["Enter a food and leave calories blank for an AI estimate, add a calorie-only amount, or log an analysed meal."],undefined);
+    assert.equal(TRANSLATIONS[language.code]["Ready to use your configured model. Press Analyse to send the request."],undefined);
+    assert.doesNotMatch(TRANSLATIONS[language.code][message],/\b(?:AI|KI|IA|ИИ)\b|l’IA|для ИИ/);
+  }
+});
+
+test('interface wording omits the removed badge and engine references while retaining estimate/privacy guidance',async()=>{
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const disallowed=/\b(?:AI|KI|IA)\b|ИИ|OpenAI|xAI|Bring your own API/;
+  assert.doesNotMatch(html,disallowed);
+  assert.equal((html.match(/<span class="chip">/g)||[]).length,3);
+  assert.match(html,/Enter calories yourself to skip the estimate/);
+  assert.match(html,/sends your food description, attached photos and extracted recipe text to your chosen provider/);
+  for(const[code,dictionary]of Object.entries(TRANSLATIONS)){
+    for(const[key,value]of Object.entries(dictionary)){
+      assert.doesNotMatch(key,disallowed,'English key in '+code);
+      assert.doesNotMatch(value,disallowed,'Translation '+code+': '+key);
+    }
+    assert.equal(dictionary['Bring your own API'],undefined);
+  }
+  const {normalize,PRESETS}=await import('../src/ai.js');
+  const {renderResult,resultToMarkdown}=await import('../src/render.js');
+  const {renderConfidenceBadge}=await import('../src/diary.js');
+  const result=normalize({dish:'Oats',summary:'One bowl',items:[{name:'Oats',calories:150}],total:{calories:150}});
+  assert.doesNotMatch(renderResult(result),disallowed);assert.doesNotMatch(renderConfidenceBadge(.8),disallowed);
+  assert.match(renderConfidenceBadge(.8),/80% estimate confidence/);
+  const markdown=resultToMarkdown(result);assert.doesNotMatch(markdown,disallowed);assert.match(markdown,/Nutrition values are estimates\. Not medical or dietary advice/);
+  for(const preset of Object.values(PRESETS))assert.doesNotMatch(preset.label,disallowed);
+  // The display name changes never alter provider IDs, authentication or target URLs.
+  assert.equal(PRESETS.openai.baseUrl,'https://api.openai.com/v1');assert.equal(PRESETS.openai.auth,'bearer');
+});

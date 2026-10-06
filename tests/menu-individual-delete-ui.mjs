@@ -13,7 +13,7 @@ try{
   saveDiary([createEntry({name:'Diary breakfast',calories:300,date:localDay(),meal:'breakfast'}),createEntry({name:'Diary lunch',calories:450,date:localDay(),meal:'lunch'})]);
  });
  await page.reload();await page.locator('#meal-library-toggle').click();
- assert.equal(await page.locator('[data-open-analysis=\"analysis-1\"] .diary-confidence').textContent(),'82% AI confidence');
+ assert.equal(await page.locator('[data-open-analysis=\"analysis-1\"] .diary-confidence').textContent(),'82% estimate confidence');
  await page.locator('[data-remove-analysis="analysis-1"]').click();await page.locator('#delete-confirmation').waitFor();assert.match(await page.locator('#delete-confirmation').innerText(),/Saved pasta analysis/);await page.locator('[data-delete-cancel]').click();assert.equal(await page.locator('[data-remove-analysis="analysis-1"]').count(),1);
  await page.locator('[data-remove-analysis="analysis-1"]').click();await page.locator('[data-delete-confirm]').click();await page.waitForFunction(()=>document.querySelector('#library-history-count').textContent==='0');
  await page.locator('#library-tab-diary').click();assert.equal(await page.locator('[data-remove-diary]').count(),2);await page.locator('[data-remove-diary]').first().click();await page.locator('#delete-confirmation').waitFor();assert.match(await page.locator('#delete-confirmation').innerText(),/Diary (breakfast|lunch)/);await page.locator('[data-delete-confirm]').click();await page.waitForFunction(()=>document.querySelector('#library-diary-count').textContent==='1');

@@ -65,7 +65,7 @@ export function demoAnalyze(text, hasImage) {
     dish: base.dish,
     summary: hasImage
       ? "Demo estimate based on the description. Connect a vision model in Settings for a real photo analysis."
-      : "Demo estimate from a built-in food database. Connect a model in Settings for genuine AI analysis.",
+      : "Demo estimate from a built-in food database. Connect a model in Settings to analyse your food.",
     confidence: 0.55,
     portion_notes: `Assumed ${base.unit}.`,
     items,

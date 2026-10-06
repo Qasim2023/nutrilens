@@ -1,7 +1,7 @@
 // Urdu interface translations. Technical identifiers remain unchanged.
 const rows=`
 Language|زبان
-Choose the app and AI response language. Saved automatically.|ایپ اور AI کے جوابوں کی زبان منتخب کریں۔ انتخاب خودکار طور پر محفوظ ہوتا ہے۔
+Choose the app and analysis language. Saved automatically.|ایپ اور تجزیے کی زبان منتخب کریں۔ انتخاب خودکار طور پر محفوظ ہوتا ہے۔
 Settings|ترتیبات
 Analyse food|کھانے کا تجزیہ کریں
 Daily food diary|روزانہ کھانے کی ڈائری
@@ -12,7 +12,6 @@ Know exactly what's|جانیں کہ کیا ہے
 on your plate|آپ کی پلیٹ میں
 Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.|تصویر منسلک کریں یا اپنے کھانے کی تفصیل بتائیں۔ NutriLens کیلوریز، بڑے اور خرد غذائی اجزا اور صحت کے اسکور کا اندازہ لگاتا ہے۔
 Photo or text|تصویر یا متن
-Bring your own API|اپنا API استعمال کریں
 Macros & micros|بڑے اور خرد غذائی اجزا
 Export & print|برآمد کریں اور پرنٹ کریں
 Photo|تصویر
@@ -41,7 +40,7 @@ Dinner|رات کا کھانا
 Snacks|ہلکی پھلکی خوراک
 Other|دیگر
 Add food or calories|کھانا یا کیلوریز شامل کریں
-Describe your food and leave calories blank for an AI estimate. Enter calories yourself to skip AI.|کھانے کی تفصیل بتائیں اور AI کے اندازے کے لیے کیلوریز کا خانہ خالی چھوڑیں۔ AI استعمال نہ کرنے کے لیے کیلوریز خود درج کریں۔
+Describe your food and leave calories blank for an estimate. Enter calories yourself to skip the estimate.|کھانے کی تفصیل بتائیں اور اندازے کے لیے کیلوریز کا خانہ خالی چھوڑیں۔ اندازہ چھوڑنے کے لیے کیلوریز خود درج کریں۔
 Food / meal|غذا / کھانا
 (optional)|(اختیاری)
 Calories eaten (kcal)|کھائی گئی کیلوریز (kcal)
@@ -51,7 +50,7 @@ Save changes|تبدیلیاں محفوظ کریں
 Analyse a food instead|اس کے بجائے کھانے کا تجزیہ کریں
 Foods eaten|کھائی گئی غذائیں
 Clear this day|اس دن کے اندراجات حذف کریں
-AI estimate|AI کا اندازہ
+Estimated nutrition|غذائیت کا اندازہ
 Manual entry|دستی اندراج
 Estimated portion|اندازاً مقدار
 Detailed nutrition|غذائیت کی تفصیل
@@ -67,7 +66,7 @@ Fiber|فائبر
 Fibre|فائبر
 Sugar|شکر
 Sodium|سوڈیم
-AI confidence|AI کا اعتماد
+Estimate confidence|اندازے کا اعتماد
 item|غذائی جزو
 items|غذائی اجزا
 Macro split|بڑے غذائی اجزا کی تقسیم
@@ -124,7 +123,6 @@ Analysing your description…|آپ کی تفصیل کا تجزیہ ہو رہا �
 Repairing the nutrition response…|غذائیت کے جواب کو درست کیا جا رہا ہے…
 Attach a photo, add a recipe file, or describe a meal, then hit|تصویر یا ترکیب کی فائل منسلک کریں، یا کھانے کی تفصیل بتائیں، پھر دبائیں
 Results appear here with calories, macros, micronutrients and a health score.|کیلوریز، بڑے اور خرد غذائی اجزا اور صحت کا اسکور یہاں ظاہر ہوں گے۔
-Ready to use your configured model. Press Analyse to send the request.|آپ کا منتخب ماڈل تیار ہے۔ درخواست بھیجنے کے لیے تجزیہ کریں دبائیں۔
 Open Settings, add your API key and fetch/select a model. No demo results are substituted.|ترتیبات کھولیں، API کلید شامل کریں اور ماڈل منتخب کریں۔ نمائشی نتائج استعمال نہیں کیے جائیں گے۔
 to analyse ·|تجزیے کے لیے ·
 for a new line|نئی سطر کے لیے
@@ -133,7 +131,7 @@ Recipes: PDF, DOCX, TXT, Markdown, CSV or JSON|ترکیبیں: PDF، DOCX، TXT�
 up to 5 files, 5 MB each|زیادہ سے زیادہ 5 فائلیں، ہر ایک 5 MB
 Your key is stored in this browser. The optional local relay forwards requests only to your chosen endpoint and never logs or saves keys.|آپ کی کلید اسی براؤزر میں محفوظ ہے۔ اختیاری مقامی ریلے درخواستیں صرف منتخب پتے پر بھیجتا ہے اور کلیدیں محفوظ نہیں کرتا۔
 Estimates are for general information and are not medical or dietary advice.|اندازے عمومی معلومات کے لیے ہیں، طبی یا غذائی مشورہ نہیں ہیں۔
-Pick a known provider or “Custom” for any OpenAI-compatible API.|فراہم کنندہ منتخب کریں یا OpenAI سے مطابقت رکھنے والے API کے لیے «مخصوص» منتخب کریں۔
+Pick a known provider or “Custom” for a compatible API.|معروف فراہم کنندہ منتخب کریں یا مطابقت رکھنے والے API کے لیے «مخصوص» منتخب کریں۔
 Use your provider’s base URL or a full /chat/completions or /responses URL. Settings save automatically.|فراہم کنندہ کا بنیادی URL یا مکمل /chat/completions یا /responses URL درج کریں۔ ترتیبات خودکار طور پر محفوظ ہوتی ہیں۔
 Use a vision-capable model for photo analysis.|تصویر کے تجزیے کے لیے تصاویر سمجھنے والا ماڈل استعمال کریں۔
 Stored in this browser (localStorage). Requests use your key only for the chosen endpoint, directly or through your local relay.|اسی براؤزر میں محفوظ ہے (localStorage)۔ کلید صرف منتخب پتے کے لیے، براہ راست یا مقامی ریلے کے ذریعے استعمال ہوتی ہے۔
@@ -186,9 +184,9 @@ Vitamin C|وٹامن C
 Vitamin D|وٹامن D
 Vitamin B12|وٹامن B12
 e.g. Oatmeal and a banana|مثلاً دلیہ اور ایک کیلا
-Include quantities for better estimates, e.g. “2 eggs and 1 slice of toast”. Blank calories use your configured AI when you press Add entry.|بہتر اندازے کے لیے مقدار بتائیں، مثلاً «2 انڈے اور 1 ٹوسٹ»۔ کیلوریز خالی ہوں تو اندراج شامل کرنے پر آپ کا AI استعمال ہوتا ہے۔
-Saved on this device. Only food descriptions needing an AI estimate are sent to your provider.|اسی آلے پر محفوظ ہے۔ فراہم کنندہ کو صرف وہ تفصیلات بھیجی جاتی ہیں جن کے لیے AI کا اندازہ درکار ہو۔
-Enter a food and leave calories blank for an AI estimate, add a calorie-only amount, or log an analysed meal.|AI کے اندازے کے لیے کھانا درج کریں اور کیلوریز خالی چھوڑیں، صرف کیلوریز شامل کریں، یا تجزیہ شدہ کھانا درج کریں۔
+Include quantities for better estimates, e.g. “2 eggs and 1 slice of toast”. Leave calories blank to estimate them when you press Add entry.|بہتر اندازے کے لیے مقدار بتائیں، مثلاً «2 انڈے اور 1 ٹوسٹ»۔ اندراج شامل کرتے وقت اندازہ لگانے کے لیے کیلوریز خالی چھوڑیں۔
+Saved on this device. Only food descriptions needing an estimate are sent to your provider.|اسی آلے پر محفوظ ہے۔ فراہم کنندہ کو صرف وہ تفصیلات بھیجی جاتی ہیں جن کے لیے اندازہ درکار ہو۔
+Enter a food and leave calories blank for an estimate, add a calorie-only amount, or log an analysed meal.|اندازے کے لیے کھانا درج کریں اور کیلوریز خالی چھوڑیں، صرف کیلوریز شامل کریں، یا تجزیہ شدہ کھانا درج کریں۔
 The local relay forwards your key and food only to your configured endpoint. It does not log or store them. Static hosting requires Direct mode.|مقامی ریلے کلید اور کھانے کی تفصیل صرف منتخب پتے پر بھیجتا ہے، انہیں محفوظ نہیں کرتا۔ اسٹیٹک ہوسٹنگ کے لیے براہ راست موڈ ضروری ہے۔
 Full analyses save automatically to Previous analyses, with no age or entry limit. Browser data stays on this device; use the library backup for long-term safekeeping.|مکمل تجزیے وقت یا تعداد کی حد کے بغیر خودکار طور پر محفوظ ہوتے ہیں۔ ڈیٹا اسی آلے پر رہتا ہے؛ طویل مدت کے لیے لائبریری کا بیک اپ رکھیں۔
 Calculated using 4 / 4 / 9 kcal per gram; may differ from total calories because of fibre and rounding.|حساب 4 / 4 / 9 kcal فی گرام سے کیا گیا ہے؛ فائبر اور گول کرنے کی وجہ سے کل کیلوریز مختلف ہو سکتی ہیں۔
@@ -208,7 +206,7 @@ Custom endpoint|مخصوص API پتہ
 Local relay — avoids browser CORS blocks|مقامی ریلے — براؤزر کی CORS رکاوٹوں سے بچاتا ہے
 Direct browser requests|براہ راست براؤزر کی درخواستیں
 Auto — Chat Completions, then Responses if required|خودکار — Chat Completions، پھر ضرورت پڑنے پر Responses
-View a full saved result without using AI, or prepare a new analysis. Originals are never replaced.|AI استعمال کیے بغیر مکمل محفوظ نتیجہ دیکھیں یا نیا تجزیہ تیار کریں۔ اصل نتائج تبدیل نہیں ہوتے۔
+View a full saved result without analysing it again, or prepare a new analysis. Originals are never replaced.|دوبارہ تجزیہ کیے بغیر مکمل محفوظ نتیجہ دیکھیں یا نیا تجزیہ تیار کریں۔ اصل نتائج تبدیل نہیں ہوتے۔
 Choose a logged food to load its description into Analyse Food. Your diary entry will not change.|تجزیے کے لیے ڈائری سے کھانا منتخب کریں۔ ڈائری کا اندراج تبدیل نہیں ہوگا۔
 Your full analyses will appear here after you analyse a meal.|کھانے کا تجزیہ کرنے کے بعد مکمل نتائج یہاں ظاہر ہوں گے۔
 No diary meals yet. Log a named food in Daily Food Diary first.|ابھی ڈائری میں کوئی کھانا نہیں ہے۔ پہلے روزانہ کی ڈائری میں کھانا درج کریں۔

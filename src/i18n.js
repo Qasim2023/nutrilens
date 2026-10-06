@@ -12,8 +12,8 @@ export function translate(text,code=language){
   const match=String(text).match(/^(\s*)([\s\S]*?)(\s*)$/);
   const source=match[2];
   if(dictionary[source])return match[1]+dictionary[source]+match[3];
-  const confidence=source.match(/^(\d+)% AI confidence$/);
-  if(confidence)return `${confidence[1]}% ${dictionary['AI confidence']||'AI confidence'}`;
+  const confidence=source.match(/^(\d+)% estimate confidence$/);
+  if(confidence)return `${confidence[1]}% ${dictionary['Estimate confidence']||'estimate confidence'}`;
   const today=source.match(/^(.+) kcal today$/);
   if(today)return `${today[1]} kcal ${dictionary['today']||'today'}`;
   const entries=source.match(/^(\d+) (entry|entries) logged$/);

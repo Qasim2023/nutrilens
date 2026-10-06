@@ -47,9 +47,7 @@
     <h1>Know exactly what's <span class="grad">on your plate</span></h1>
     <p>Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.</p>
     <div class="hero-chips">
-      <span class="chip"><span class="icon-slot"></span> Photo or text</span>
-      <span class="chip"><span class="icon-slot"></span> Bring your own API</span>
-      <span class="chip"><span class="icon-slot"></span> Macros &amp; micros</span>
+      <span class="chip"><span class="icon-slot"></span> Photo or text</span>      <span class="chip"><span class="icon-slot"></span> Macros &amp; micros</span>
       <span class="chip"><span class="icon-slot"></span> Export &amp; print</span>
     </div>
   </section>
@@ -109,19 +107,19 @@
         <div class="diary-daily-total" aria-live="polite" aria-atomic="true"><span id="diary-total">0</span><small>kcal</small></div>
         <span id="diary-count" class="diary-count">0 entries logged</span>
         <div class="diary-meal-totals" id="diary-meal-totals"></div>
-        <p class="diary-local-note">Saved on this device. Only food descriptions needing an AI estimate are sent to your provider.</p>
+        <p class="diary-local-note">Saved on this device. Only food descriptions needing an estimate are sent to your provider.</p>
       </div>
       <div class="card diary-add-card">
-        <h2>Add food or calories</h2><p>Describe your food and leave calories blank for an AI estimate. Enter calories yourself to skip AI.</p>
+        <h2>Add food or calories</h2><p>Describe your food and leave calories blank for an estimate. Enter calories yourself to skip the estimate.</p>
         <div class="diary-draft-note" id="diary-draft-note" hidden></div>
         <div class="diary-estimating" id="diary-estimating" role="status" aria-live="polite" hidden><span class="spinner"></span><span id="diary-estimate-status">Estimating calories…</span><button class="btn btn-sm btn-ghost" id="diary-cancel-estimate" type="button">Cancel estimate</button></div>
         <form id="diary-form">
-          <div class="field"><label for="diary-food">Food / meal <span class="optional">(optional)</span></label><input class="input" id="diary-food" type="text" maxlength="160" placeholder="e.g. Oatmeal and a banana" autocomplete="off"></div>
+          <div class="field"><label for="diary-food">Food / meal</label><input class="input" id="diary-food" type="text" maxlength="160" placeholder="e.g. Oatmeal and a banana" autocomplete="off"></div>
           <div class="diary-form-row">
             <div class="field"><label for="diary-calories">Calories eaten (kcal) <span class="optional">(optional)</span></label><input class="input" id="diary-calories" type="number" min="0" max="100000" step="0.1" inputmode="decimal" placeholder="123" aria-describedby="diary-calorie-help"></div>
             <div class="field"><label for="diary-meal">Meal category</label><select class="select" id="diary-meal"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack">Snacks</option><option value="other" selected>Other</option></select></div>
           </div>
-          <p class="diary-calorie-help" id="diary-calorie-help">Include quantities for better estimates, e.g. “2 eggs and 1 slice of toast”. Blank calories use your configured AI when you press Add entry.</p>
+          <p class="diary-calorie-help" id="diary-calorie-help">Include quantities for better estimates, e.g. “2 eggs and 1 slice of toast”. Leave calories blank to estimate them when you press Add entry.</p>
           <div class="diary-form-actions"><button class="btn btn-primary" type="submit" id="diary-save">Add entry</button><button class="btn btn-ghost" type="button" id="diary-cancel-edit" hidden>Cancel</button><button class="btn btn-ghost" type="button" id="diary-analyse-food">Analyse a food instead</button></div>
         </form>
       </div>
@@ -132,6 +130,34 @@
     </div>
   </section>
 
+  <footer class="site-footer" aria-label="Website footer">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <a class="footer-logo" href="#" data-footer-target="view-analysis" aria-label="NutriLens home"><img src="./public/icon.svg" width="36" height="36" alt=""><span class="brand-name">NutriLens</span></a>
+        <p>A clearer picture of your nutrition.</p>
+        <span class="footer-local"><span aria-hidden="true"></span>Saved on this device</span>
+      </div>
+      <nav class="footer-column" aria-labelledby="footer-explore">
+        <h2 id="footer-explore">Explore</h2>
+        <button type="button" data-footer-target="view-analysis">Analyse food</button>
+        <button type="button" data-footer-target="view-diary">Daily food diary</button>
+        <button type="button" data-footer-target="meal-library-toggle">Previous analyses &amp; meals</button>
+      </nav>
+      <nav class="footer-column" aria-labelledby="footer-resources">
+        <h2 id="footer-resources">Help &amp; information</h2>
+        <button type="button" data-footer-info="about" aria-haspopup="dialog" aria-controls="footer-info">About NutriLens</button>
+        <button type="button" data-footer-info="help" aria-haspopup="dialog" aria-controls="footer-info">Help &amp; getting started</button>
+        <button type="button" data-footer-info="privacy" aria-haspopup="dialog" aria-controls="footer-info">Privacy and local storage</button>
+        <button type="button" data-footer-target="settings-btn">Settings</button>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copyright"><span data-i18n-skip>&copy; <span id="footer-year">2026</span> NutriLens</span></p>
+      <p class="footer-disclaimer">Nutrition values are estimates, not medical advice.</p>
+      <a class="footer-top" href="#" data-footer-top><span>Back to top</span><span aria-hidden="true">&uarr;</span></a>
+    </div>
+  </footer>
+
 </div>
 <div id="meal-library-scrim" class="meal-library-scrim" hidden></div>
 <aside id="meal-library" class="meal-library" role="dialog" aria-modal="true" aria-labelledby="meal-library-heading" hidden inert>
@@ -139,7 +165,7 @@
   <div class="meal-library-tabs"><button class="btn btn-sm" id="library-tab-history" type="button" aria-pressed="true">Previous analyses <span id="library-history-count">0</span></button><button class="btn btn-sm" id="library-tab-diary" type="button" aria-pressed="false">Diary meals <span id="library-diary-count">0</span></button></div>
   <div class="meal-library-tools"><p id="meal-library-intro"></p><label class="sr-only" for="meal-library-search">Search meals</label><input class="input" id="meal-library-search" type="search" placeholder="Search previous analyses…" autocomplete="off"><span id="meal-library-count" class="library-count"></span><div class="diary-warning" id="meal-library-error" role="alert" hidden></div></div>
   <div class="meal-library-scroll"><div id="meal-library-list"></div><button class="btn btn-sm" id="meal-library-more" type="button" hidden>Show more meals</button></div>
-  <div class="meal-library-footer"><div class="library-clear-actions"><button class="btn btn-sm library-clear-all" id="meal-library-clear-all" type="button" aria-describedby="meal-library-clear-note" disabled>Delete all analyses</button><p id="meal-library-clear-note">Deletes every saved analysis, not just search results. Diary meals are kept. Cannot be undone.</p></div><div class="library-backup-actions"><button class="btn btn-sm" id="meal-library-backup" type="button">Download history backup</button><button class="btn btn-ghost btn-sm" id="meal-library-import" type="button">Restore backup</button><input type="file" id="meal-library-import-file" accept=".json,application/json" hidden></div><p>Saved on this browser with no automatic expiry. Clearing site data removes local history; keep a private backup. Diary entries are kept separately.</p></div>
+  <div class="meal-library-footer"><div class="library-clear-actions"><button class="btn btn-sm library-clear-all" id="meal-library-clear-all" type="button" aria-describedby="meal-library-clear-note" disabled>Delete all analyses</button><p id="meal-library-clear-note">Deletes every saved analysis, not just search results. Diary meals are kept. Cannot be undone.</p></div><div class="library-backup-actions"><button class="btn btn-primary btn-sm" id="meal-library-backup-encrypted" type="button">Download encrypted backup</button><button class="btn btn-sm" id="meal-library-backup" type="button">Download all meals backup</button><button class="btn btn-ghost btn-sm" id="meal-library-import" type="button">Restore backup</button><input type="file" id="meal-library-import-file" accept=".json,application/json" hidden></div><p>Backups include saved analyses and diary entries, but not settings or API keys. Encrypted backups are recommended; the all-meals JSON download is unencrypted.</p></div>
 </aside>
 
 <!-- ============================ Settings drawer ============================ -->
@@ -150,36 +176,44 @@
     <button class="icon-btn" id="close-drawer" type="button" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="drawer-body">
-    <div class="hosting-notice" id="static-hosting-notice" role="note" hidden><strong>Static website mode</strong><p>This site sends AI requests directly to your chosen provider. The provider must allow browser requests (CORS). No local relay runs here.</p><p>Use your own API key. Never put an API key in the repository or a public website.</p></div>
+    <div class="hosting-notice" id="static-hosting-notice" role="note" hidden><strong>Static website mode</strong><p>This site sends analysis requests directly to your chosen provider. The provider must allow browser requests (CORS). No local relay runs here.</p><p>Use your own API key. Never put an API key in the repository or a public website.</p></div>
+    <details class="accordion" id="personal-privacy-notice" style="margin-bottom:20px">
+      <summary>Privacy and local storage</summary>
+      <div class="acc-body">
+        <p class="desc">Analysing food or estimating calories sends your food description, attached photos and extracted recipe text to your chosen provider.</p>
+        <p class="desc">Meals stay in this browser and do not sync across devices or site addresses. Download an all-meals backup before switching sites.</p>
+        <p class="desc">Browser storage is not an encrypted vault. Use encrypted backups and a personal restricted API key. Keys and custom headers are kept only for this tab session, not in persistent settings. Protect your Netlify site.</p>
+        <p class="desc">Nutrition values are estimates, not medical advice. Food illustrations are representative, not photos of your portion.</p>
+      </div>
+    </details>
     <div class="field">
       <label for="set-language">Language</label>
-      <div class="desc" id="language-help">Choose the app and AI response language. Saved automatically.</div>
+      <div class="desc" id="language-help">Choose the app and analysis language. Saved automatically.</div>
       <select class="select" id="set-language" aria-describedby="language-help" data-i18n-skip></select>
     </div>
 
     <div class="field">
       <label for="set-provider">Provider preset</label>
-      <div class="desc">Pick a known provider or “Custom” for any OpenAI-compatible API.</div>
+      <div class="desc">Pick a known provider or “Custom” for a compatible API.</div>
       <select class="select" id="set-provider">
-        <option value="wikivibe">WikiVibe (your endpoint)</option>
-        <option value="openai">OpenAI</option>
+        <option value="openai">GPT</option>
         <option value="openrouter">OpenRouter</option>
         <option value="groq">Groq</option>
-        <option value="together">Together AI</option>
+        <option value="together">Together</option>
         <option value="deepseek">DeepSeek</option>
         <option value="mistral">Mistral</option>
-        <option value="xai">xAI (Grok)</option>
+        <option value="xai">Grok</option>
         <option value="ollama">Ollama (local)</option>
         <option value="lmstudio">LM Studio (local)</option>
-        <option value="azure">Azure OpenAI</option>
+        <option value="azure">Azure</option>
         <option value="custom">Custom endpoint</option>
       </select>
     </div>
 
     <div class="field">
       <label for="set-baseurl">API base URL</label>
-      <div class="desc">Use your provider’s base URL or a full /chat/completions or /responses URL. Settings save automatically.</div>
-      <input class="input" id="set-baseurl" type="url" placeholder="https://api.wikivibe.ru/v1" spellcheck="false" autocomplete="off">
+      <div class="desc">Enter your own provider URL, API key and model. No shared credentials are included. Settings save automatically.</div>
+      <input class="input" id="set-baseurl" type="url" placeholder="https://your-provider.example/v1" spellcheck="false" autocomplete="off">
       <div class="status-line" id="endpoint-preview" aria-live="polite"></div>
     </div>
     <div class="field">
@@ -212,7 +246,7 @@
 
     <div class="field">
       <label for="set-apikey">API key</label>
-      <div class="desc">Stored in this browser (localStorage). Requests use your key only for the chosen endpoint, directly or through your local relay.</div>
+      <div class="desc">Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key only for the chosen endpoint, directly or through your local relay.</div>
       <div class="key-row">
         <input class="input" id="set-apikey" type="password" placeholder="sk-…" spellcheck="false" autocomplete="off">
         <button class="icon-btn" id="set-keyvisible" type="button" role="switch" aria-checked="false" aria-label="Show API key" title="Show / hide key"><span class="icon-slot"></span></button>
@@ -320,6 +354,35 @@
 
   </div>
 </aside>
+
+
+<dialog class="footer-info" id="footer-info" aria-labelledby="footer-about-title">
+  <div class="footer-info-header"><span class="brand-name">NutriLens</span><button class="icon-btn" type="button" id="footer-info-close" aria-label="Close" autofocus><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+  <section data-footer-panel="about" hidden>
+    <h2 id="footer-about-title">About NutriLens</h2>
+    <p>Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.</p>
+    <p>Log what you ate. Every entry adds to your daily calorie total.</p>
+    <div class="footer-info-note">Nutrition values are estimates, not medical advice. Food illustrations are representative, not photos of your portion.</div>
+  </section>
+  <section data-footer-panel="help" hidden>
+    <h2 id="footer-help-title">Help &amp; getting started</h2>
+    <ol class="footer-help-steps">
+      <li><h3>Settings</h3><p>Open Settings, add your API key and fetch/select a model. No demo results are substituted.</p></li>
+      <li><h3>Analyse food</h3><p>Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.</p></li>
+      <li><h3>Daily food diary</h3><p>Describe your food and leave calories blank for an estimate. Enter calories yourself to skip the estimate.</p></li>
+      <li><h3>Download all meals backup</h3><p>Backups include saved analyses and diary entries, but not settings or API keys.</p></li>
+    </ol>
+    <button class="btn btn-primary" type="button" data-footer-target="settings-btn">Settings</button>
+  </section>
+  <section data-footer-panel="privacy" hidden>
+    <h2 id="footer-privacy-title">Privacy and local storage</h2>
+    <p>Analysing food or estimating calories sends your food description, attached photos and extracted recipe text to your chosen provider.</p>
+    <p>Meals stay in this browser and do not sync across devices or site addresses. Download an all-meals backup before switching sites.</p>
+    <p>Browser storage is not an encrypted vault. Use encrypted backups and a personal restricted API key. Keys and custom headers are kept only for this tab session, not in persistent settings. Protect your Netlify site.</p>
+    <p>Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key only for the chosen endpoint, directly or through your local relay.</p>
+    <button class="btn" type="button" data-footer-target="meal-library-toggle">Previous analyses &amp; meals</button>
+  </section>
+</dialog>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="icon-sprite" hidden></div>
