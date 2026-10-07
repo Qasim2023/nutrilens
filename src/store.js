@@ -1,12 +1,13 @@
 /* ==========================================================================
    NutriLens — settings + history persistence
-   API keys stay in tab-scoped sessionStorage. Hosted WikiVibe requests pass
-   through the Vercel relay to that provider; the relay does not persist keys.
+   API keys stay in tab-scoped sessionStorage. Requests use the visitor’s
+   chosen provider and configured connection method.
    ========================================================================== */
 
 import { DEFAULT_BASE_URL, DEFAULT_MODEL, PRESETS } from "./ai.js";
 import { isStaticHosting } from "./hosting.js";
 import { normalizeLanguage } from "./languages.js";
+import { normalizeMaxTokens, OUTPUT_TOKEN_LIMITS } from "./output-tokens.js";
 
 const SETTINGS_KEY = "nutrilens.settings.v1";
 const SESSION_KEY = "nutrilens.session.v1";
@@ -33,7 +34,7 @@ export const defaults = {
   keyHeader: "Authorization",
   extraHeaders: "",
   temperature: 0.2,
-  maxTokens: 4096,
+  maxTokens: OUTPUT_TOKEN_LIMITS.default,
   jsonMode: true,
   theme: "dark",
   accent: "emerald",
@@ -47,7 +48,12 @@ export const defaults = {
 };
 
 function supportedSettings(stored) {
-  return Object.fromEntries(Object.entries(defaults).map(([key,value])=>[key,key==="transport"&&isStaticHosting()?"direct":key==="language"?normalizeLanguage(stored[key]):Object.hasOwn(stored,key)?stored[key]:value]));
+  return Object.fromEntries(Object.entries(defaults).map(([key, value]) => {
+    if (key === "transport" && isStaticHosting()) return [key, "direct"];
+    if (key === "language") return [key, normalizeLanguage(stored[key])];
+    if (key === "maxTokens") return [key, normalizeMaxTokens(stored[key])];
+    return [key, Object.hasOwn(stored, key) ? stored[key] : value];
+  }));
 }
 
 export function loadSettings() {

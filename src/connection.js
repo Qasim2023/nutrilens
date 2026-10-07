@@ -1,6 +1,7 @@
 import { effectiveTransport, isStaticHosting } from "./hosting.js";
 import {HOSTED_RELAY_PATH, hostedProviderPath, HOSTED_ROUTES} from './hosted-provider.js';
 import {validateEndpoint, validateHeader} from "./security-policy.js";
+import {normalizeMaxTokens} from "./output-tokens.js";
 
 // URL handling and transport shared by connection tests, model discovery and analysis.
 // Fresh installs have no provider endpoint or account-specific configuration.
@@ -61,7 +62,7 @@ export function responseText(json) {
   if (json?.error) throw new Error(typeof json.error === "string" ? json.error : json.error.message || "Provider error");
   if (json?.status === "failed") throw new Error("The provider marked this response as failed.");
   if (json?.status === "incomplete" || json?.choices?.[0]?.finish_reason === "length") {
-    throw new Error("The response was cut off. Increase Max response tokens in Settings, then retry.");
+    throw new Error("The response was cut off. Increase Max output tokens in Settings, then retry.");
   }
   const content = json?.choices?.[0]?.message?.content ?? json?.choices?.[0]?.text ?? json?.output_text;
   if (typeof content === "string") return content;
@@ -77,7 +78,7 @@ export function parseEventStream(text) {
     let event;
     try { event = JSON.parse(payload); } catch { continue; }
     if (event.error || /response\.(failed|incomplete)|^error$/.test(event.type || "")) throw new Error(event.error?.message || event.response?.error?.message || "Stream failed or was cut off.");
-    if (event.choices?.[0]?.finish_reason === "length") throw new Error("Response was cut off. Increase Max response tokens.");
+    if (event.choices?.[0]?.finish_reason === "length") throw new Error("Response was cut off. Increase Max output tokens in Settings.");
     chat += event.choices?.[0]?.delta?.content || "";
     if (event.type === "response.output_text.delta") response += event.delta || "";
     if (event.type === "response.completed") final = event.response;
@@ -97,10 +98,10 @@ export async function requestJson(settings, url, { method = "POST", body, signal
   if (transport === 'hosted') {
     const path = hostedProviderPath(url);
     if (HOSTED_ROUTES[path] !== method) throw new Error('Unsupported hosted provider method.');
-    if (settings.auth !== 'bearer') throw new Error('The WikiVibe relay requires Bearer authentication with your own API key.');
-    if (String(settings.extraHeaders || '').trim()) throw new Error('The WikiVibe relay does not forward custom headers. Clear Extra headers in Settings.');
+    if (settings.auth !== 'bearer') throw new Error('The hosted relay requires Bearer authentication with your own API key.');
+    if (String(settings.extraHeaders || '').trim()) throw new Error('The hosted relay does not forward custom headers. Clear Extra headers in Settings.');
     const key = String(settings.apiKey || '').trim().replace(/^Bearer\s+/i, '');
-    if (!key) throw new Error('Enter your own WikiVibe API key in Settings. No shared key is configured.');
+    if (!key) throw new Error('Enter your provider API key in Settings. No shared key is configured.');
     validateHeader('Authorization', 'Bearer ' + key);
     hostedRequest = {method:'POST', headers:{'Content-Type':'application/json','X-NutriLens-Relay':'hosted-v1','Authorization':'Bearer '+key},body:JSON.stringify({path,method,body}),signal:combined,redirect:'error',credentials:'same-origin',referrerPolicy:'no-referrer',cache:'no-store'};
   }
@@ -118,7 +119,7 @@ export async function requestJson(settings, url, { method = "POST", body, signal
   } catch (error) {
     if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
     if (timeout.aborted) throw new Error("The endpoint timed out after 120 seconds. Try another model or a smaller request.");
-    if (transport === 'hosted') throw new Error('Could not reach the Vercel relay. Deploy the latest version and check the site/network.');
+    if (transport === 'hosted') throw new Error('Could not reach the hosted relay. Check the site and network, then try again.');
     throw new Error(isStaticHosting() ? "Could not connect to your provider from this static site. Your HTTPS endpoint must allow browser CORS requests from this site. This static deployment cannot run the local relay. Use a CORS-enabled provider or your own trusted authenticated proxy; check the endpoint and network." : "Could not connect. Run node server.mjs and choose Local relay to avoid browser CORS blocks. Check your endpoint and network.");
   }
   const limit = 24 * 1024 * 1024;
@@ -177,7 +178,8 @@ function makeBody(settings, messages, protocol, maxTokens) {
   return body;
 }
 
-export async function complete(settings, messages, { signal, maxTokens = settings.maxTokens || 4096, onStatus = () => {} } = {}) {
+export async function complete(settings, messages, { signal, maxTokens = settings.maxTokens, onStatus = () => {} } = {}) {
+  maxTokens = normalizeMaxTokens(maxTokens);
   const auto = !settings.apiFormat || settings.apiFormat === "auto";
   let protocol = settings.apiFormat === "responses" || /\/responses\/?(?:\?|$)/.test(settings.baseUrl) ? "responses" : "chat";
   let body = makeBody(settings, messages, protocol, maxTokens);

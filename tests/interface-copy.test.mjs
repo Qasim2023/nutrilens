@@ -67,3 +67,44 @@ test('interface wording omits the removed badge and engine references while reta
   // The display name changes never alter provider IDs, authentication or target URLs.
   assert.equal(PRESETS.openai.baseUrl,'https://api.openai.com/v1');assert.equal(PRESETS.openai.auth,'bearer');
 });
+
+
+test('settings, privacy, provider presets and connection messages omit removed branding and notice',async()=>{
+  const removed=/wikivibe|vercel|Hosted website mode|Use your own API key\. Never put an API key/i;
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  assert.doesNotMatch(html,removed);
+  assert.doesNotMatch(app,removed);
+  assert.doesNotMatch(html,/static-hosting-notice|hosted-relay-notice|direct-hosting-notice/);
+  assert.doesNotMatch(app,/static-hosting-notice|hosted-relay-notice|direct-hosting-notice/);
+  const {PRESETS}=await import('../src/ai.js');
+  const providerSelect=html.match(/<select[^>]*id="set-provider"[^>]*>([\s\S]*?)<\/select>/)[1];
+  const optionIds=[...providerSelect.matchAll(/<option value="([^"]+)"/g)].map(match=>match[1]);
+  assert.deepEqual(optionIds,Object.keys(PRESETS));
+  assert.equal(Object.hasOwn(PRESETS,'wikivibe'),false);
+  for(const preset of Object.values(PRESETS))assert.doesNotMatch(preset.label,removed);
+  for(const file of ['connection.js','hosted-provider.js']){
+    const source=readFileSync(new URL('../src/'+file,import.meta.url),'utf8');
+    for(const match of source.matchAll(/new Error\((['"])(.*?)\1\)/g))assert.doesNotMatch(match[2],removed);
+  }
+  for(const dictionary of Object.values(TRANSLATIONS)){
+    for(const[key,value]of Object.entries(dictionary)){assert.doesNotMatch(key,removed);assert.doesNotMatch(value,removed);}
+  }
+});
+
+test('retired provider presets migrate to Custom without resetting the visitor connection or credentials',async()=>{
+  const old={localStorage:globalThis.localStorage,sessionStorage:globalThis.sessionStorage,location:globalThis.location};
+  const memory=()=>{const data=new Map();return{getItem:key=>data.get(key)??null,setItem:(key,value)=>data.set(key,String(value)),removeItem:key=>data.delete(key)};};
+  globalThis.localStorage=memory();globalThis.sessionStorage=memory();globalThis.location={hostname:'localhost',protocol:'http:'};
+  try{
+    const connection={provider:'wikivibe',baseUrl:'https://api.wikivibe.dev/v1',model:'visitor-model',auth:'bearer',apiKey:'synthetic-visitor-key',extraHeaders:'',theme:'light'};
+    localStorage.setItem('nutrilens.settings.v1',JSON.stringify(connection));
+    const {loadSettings}=await import('../src/store.js?retired-provider-copy');
+    const settings=loadSettings();
+    assert.equal(settings.provider,'custom');
+    for(const key of ['baseUrl','model','auth','apiKey','theme'])assert.equal(settings[key],connection[key]);
+    const stored=JSON.parse(localStorage.getItem('nutrilens.settings.v1'));
+    assert.equal(stored.provider,'custom');assert.equal(stored.apiKey,undefined);
+    assert.equal(JSON.parse(sessionStorage.getItem('nutrilens.credentials.v1')).apiKey,connection.apiKey);
+  }finally{Object.assign(globalThis,old);}
+});

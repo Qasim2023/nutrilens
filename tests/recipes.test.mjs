@@ -108,13 +108,13 @@ function fakeElement(){
   const element={hidden:false,disabled:false,value:'',innerHTML:'',history:[],attributes:{},
     addEventListener(type,handler){listeners.set(type,handler);},
     async fire(type,event={preventDefault(){}}){return await listeners.get(type)?.(event);},
-    setAttribute(name,value){this.attributes[name]=value;},focus(){},
+    setAttribute(name,value){this.attributes[name]=value;},focus(){this.focused=true;},querySelector(){return null;},
   };
   Object.defineProperty(element,'textContent',{get(){return content;},set(value){content=String(value);this.history.push(content);}});
   return element;
 }
 function fakeRecipeDocument(){
-  const selectors=['#recipe-form','#recipe-instructions','#recipe-servings','#recipe-time','#recipe-generate','#recipe-generate-label','#recipe-setup-note','#recipe-error','#recipe-status','#recipe-status-text','#recipe-cancel','#recipe-empty','#recipe-results-list','#recipe-announcement','#recipe-guide','#recipe-guide-dismiss','#recipe-settings-button'];
+  const selectors=['#recipe-form','#recipe-instructions','#recipe-servings','#recipe-time','#recipe-generate','#recipe-generate-label','#recipe-setup-note','#recipe-error','#recipe-status','#recipe-status-text','#recipe-cancel','#recipe-empty','#recipe-results-list','#recipe-announcement','#recipe-guide','#recipe-guide-dismiss','#recipe-settings-button','#recipe-show-generated','#recipe-show-saved','#recipe-saved-count','#recipe-saved-empty','#recipe-saved-note','#recipe-export-format','#recipe-export-all'];
   const elements=new Map(selectors.map(selector=>[selector,fakeElement()]));
   const listeners=new Map();
   return {elements,document:{querySelector(selector){if(!elements.has(selector))throw new Error('Unexpected selector '+selector);return elements.get(selector);},querySelectorAll(){return [];},addEventListener(type,handler){listeners.set(type,handler);}},openRecipes(){listeners.get('nutrilens:recipes-open')?.();}};
@@ -146,4 +146,77 @@ test('Recipe Studio UI displays generation progress from the provider layer',asy
     assert.equal(ui.elements.get('#recipe-status').hidden,true);
     assert.match(ui.elements.get('#recipe-results-list').innerHTML,/Lemon chickpea bowl/);
   }finally{globalThis.document=previousDocument;globalThis.localStorage=previousStorage;globalThis.fetch=previousFetch;}
+});
+function recipeStorage() {
+  const data = new Map();
+  return { data, getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
+}
+function action(name, index = 0) {
+  return { target: { closest: () => ({ dataset: { recipeAction: name, recipeIndex: String(index) } }) } };
+}
+
+test('Recipe Studio saves explicitly, disables duplicate saves and reopens saved recipes after reload', async () => {
+  const previousDocument = globalThis.document, previousStorage = globalThis.localStorage, previousFetch = globalThis.fetch;
+  const ui = fakeRecipeDocument(); const storage = recipeStorage();
+  globalThis.document = ui.document; globalThis.localStorage = storage;
+  globalThis.fetch = async () => response({ recipes: [recipe] });
+  try {
+    initRecipeStudio({ getSettings: () => settings, isProviderReady: () => true, openSettings() {} });
+    ui.elements.get('#recipe-instructions').value = 'Vegetarian dinner';
+    await ui.elements.get('#recipe-form').fire('submit');
+    assert.equal(storage.data.has('nutrilens.recipes.v1'), false, 'generation is not auto-saved');
+    await ui.elements.get('#recipe-results-list').fire('click', action('save'));
+    assert.equal(ui.elements.get('#recipe-saved-count').textContent, '1');
+    assert.equal(ui.elements.get('#recipe-announcement').textContent, 'Recipe saved.');
+    assert.match(ui.elements.get('#recipe-results-list').innerHTML, /data-recipe-action="save"[^>]+disabled/);
+    const reloaded = fakeRecipeDocument(); globalThis.document = reloaded.document;
+    initRecipeStudio({ getSettings: () => settings, isProviderReady: () => false, openSettings() {} });
+    await reloaded.elements.get('#recipe-show-saved').fire('click');
+    assert.equal(reloaded.elements.get('#recipe-saved-empty').hidden, true);
+    assert.equal(reloaded.elements.get('#recipe-export-all').disabled, false);
+    assert.match(reloaded.elements.get('#recipe-results-list').innerHTML, /Lemon chickpea bowl/);
+    assert.equal(reloaded.elements.get('#recipe-show-saved').attributes['aria-pressed'], 'true');
+  } finally { globalThis.document = previousDocument; globalThis.localStorage = previousStorage; globalThis.fetch = previousFetch; }
+});
+
+test('Recipe Studio removal requires confirmation and shows a saved empty state only after deletion', async () => {
+  const previousDocument = globalThis.document, previousStorage = globalThis.localStorage, previousFetch = globalThis.fetch;
+  const ui = fakeRecipeDocument(); const storage = recipeStorage(); let accepted = false;
+  globalThis.document = ui.document; globalThis.localStorage = storage;
+  globalThis.fetch = async () => response({ recipes: [recipe] });
+  try {
+    initRecipeStudio({ getSettings: () => settings, isProviderReady: () => true, openSettings() {}, confirmRemoval: async () => accepted });
+    ui.elements.get('#recipe-instructions').value = 'Vegetarian dinner';
+    await ui.elements.get('#recipe-form').fire('submit');
+    await ui.elements.get('#recipe-results-list').fire('click', action('save'));
+    await ui.elements.get('#recipe-show-saved').fire('click');
+    await ui.elements.get('#recipe-results-list').fire('click', action('remove'));
+    assert.equal(ui.elements.get('#recipe-saved-count').textContent, '1');
+    accepted = true;
+    await ui.elements.get('#recipe-results-list').fire('click', action('remove'));
+    assert.equal(ui.elements.get('#recipe-saved-count').textContent, '0');
+    assert.equal(ui.elements.get('#recipe-saved-empty').hidden, false);
+    assert.equal(ui.elements.get('#recipe-export-all').disabled, true);
+    await ui.elements.get('#recipe-show-generated').fire('click');
+    assert.match(ui.elements.get('#recipe-results-list').innerHTML, /Lemon chickpea bowl/);
+  } finally { globalThis.document = previousDocument; globalThis.localStorage = previousStorage; globalThis.fetch = previousFetch; }
+});
+
+test('failed recipe storage writes leave ideas exportable and never announce a successful save', async () => {
+  const previousDocument = globalThis.document, previousStorage = globalThis.localStorage, previousFetch = globalThis.fetch;
+  const ui = fakeRecipeDocument();
+  globalThis.document = ui.document;
+  globalThis.localStorage = { getItem: () => null, setItem() { throw new Error('quota'); } };
+  globalThis.fetch = async () => response({ recipes: [recipe] });
+  try {
+    initRecipeStudio({ getSettings: () => settings, isProviderReady: () => true, openSettings() {} });
+    ui.elements.get('#recipe-instructions').value = 'Vegetarian dinner';
+    await ui.elements.get('#recipe-form').fire('submit');
+    await ui.elements.get('#recipe-results-list').fire('click', action('save'));
+    assert.equal(ui.elements.get('#recipe-saved-count').textContent, '0');
+    assert.match(ui.elements.get('#recipe-error').textContent, /Export them instead/);
+    assert.equal(ui.elements.get('#recipe-error').hidden, false);
+    assert.equal(ui.elements.get('#recipe-export-all').disabled, false);
+    assert.notEqual(ui.elements.get('#recipe-announcement').textContent, 'Recipe saved.');
+  } finally { globalThis.document = previousDocument; globalThis.localStorage = previousStorage; globalThis.fetch = previousFetch; }
 });

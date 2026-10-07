@@ -157,7 +157,7 @@
             <div class="field"><label for="recipe-time">Ready in</label><select class="select" id="recipe-time"><option value="0">Any time</option><option value="15">15 min</option><option value="20">20 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
           </div>
           <button class="btn btn-primary recipe-generate" id="recipe-generate" type="submit"><span class="recipe-sparkle" aria-hidden="true">✦</span><span id="recipe-generate-label">Generate 3 recipes</span></button>
-          <p class="recipe-provider-note">Uses the model selected in Settings. Your recipes are not saved.</p>
+          <p class="recipe-provider-note">Uses the model selected in Settings. Save recipes to keep them in this browser.</p>
         </form>
 
         <section class="card recipe-ideas" aria-labelledby="recipe-ideas-title">
@@ -177,9 +177,22 @@
         <div class="recipe-setup-note" id="recipe-setup-note" role="alert" hidden><p>Connect a model in Settings to create recipes.</p><button class="btn btn-sm" id="recipe-settings-button" type="button">Open Settings</button></div>
         <div class="recipe-generation-status" id="recipe-status" role="status" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><span id="recipe-status-text">Creating recipe ideas…</span><button class="btn btn-sm btn-ghost" id="recipe-cancel" type="button">Cancel</button></div>
         <div class="recipe-error" id="recipe-error" role="alert" hidden></div>
+        <div class="recipe-library-toolbar">
+          <div class="recipe-view-switch" role="group" aria-label="Recipe views">
+            <button class="btn btn-sm" id="recipe-show-generated" type="button" aria-pressed="true" aria-controls="recipe-results">Recipe ideas</button>
+            <button class="btn btn-sm" id="recipe-show-saved" type="button" aria-pressed="false" aria-controls="recipe-results">Saved recipes <span id="recipe-saved-count" data-i18n-skip>0</span></button>
+          </div>
+          <div class="recipe-export-controls">
+            <label class="sr-only" for="recipe-export-format">Export format</label>
+            <select class="select" id="recipe-export-format"><option value="markdown" data-i18n-skip>Markdown (.md)</option><option value="json" data-i18n-skip>JSON (.json)</option></select>
+            <button class="btn btn-sm" id="recipe-export-all" type="button" disabled>Export all</button>
+          </div>
+        </div>
+        <p class="recipe-saved-note" id="recipe-saved-note" hidden>Saved recipes stay in this browser. Export a copy to keep them elsewhere.</p>
         <p class="sr-only" id="recipe-announcement" role="status" aria-live="polite"></p>
         <div class="recipe-results" id="recipe-results" role="region" aria-label="Recipe results">
           <div class="recipe-empty" id="recipe-empty"><span class="recipe-empty-mark" aria-hidden="true">✦</span><h3>Ready when you are</h3><p>Add ingredients and any dietary preferences, then choose Generate 3 recipes. Detailed ideas will appear here.</p></div>
+          <div class="recipe-empty" id="recipe-saved-empty" hidden><span class="recipe-empty-mark" aria-hidden="true">♡</span><h3>No saved recipes yet</h3><p>Choose Save recipe on an idea to keep it here.</p></div>
           <div class="recipe-results-list" id="recipe-results-list"></div>
         </div>
         <p class="recipe-nutrition-disclaimer">Nutrition is estimated, not medical advice. Allergy safety and cross-contact cannot be guaranteed; check ingredient labels and preparation.</p>
@@ -232,7 +245,6 @@
     <button class="icon-btn" id="close-drawer" type="button" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="drawer-body">
-    <div class="hosting-notice" id="static-hosting-notice" role="note" hidden><strong>Hosted website mode</strong><p id="direct-hosting-notice">This provider uses direct browser requests and must allow CORS. No local relay runs here.</p><p id="hosted-relay-notice" hidden>WikiVibe requests use this website’s Vercel relay. Your key and submitted food pass through Vercel to WikiVibe. The relay does not intentionally store or log them.</p><p>Use your own API key. Never put an API key in the repository or a public website.</p></div>
     <details class="accordion" id="personal-privacy-notice" style="margin-bottom:20px">
       <summary>Privacy and local storage</summary>
       <div class="acc-body">
@@ -252,7 +264,6 @@
       <label for="set-provider">Provider preset</label>
       <div class="desc">Pick a known provider or “Custom” for a compatible API.</div>
       <select class="select" id="set-provider">
-        <option value="wikivibe">WikiVibe</option>
         <option value="openai">GPT</option>
         <option value="openrouter">OpenRouter</option>
         <option value="groq">Groq</option>
@@ -284,9 +295,9 @@
       <select class="select" id="set-transport">
         <option value="relay">Local relay — avoids browser CORS blocks</option>
         <option value="direct">Direct browser requests</option>
-        <option value="hosted" hidden>Vercel relay — your own provider key</option>
+        <option value="hosted" hidden>Hosted relay — your own provider key</option>
       </select>
-      <div class="desc" style="margin-top:8px">On Vercel, WikiVibe can use the hosted relay with your own key. Other providers use Direct mode and require browser CORS. The local relay is available only on your computer.</div>
+      <div class="desc" style="margin-top:8px">Direct browser requests require provider CORS support. The local relay is available only on your computer.</div>
       <div class="desc" id="provider-hint"></div>
     </div>
 
@@ -304,7 +315,7 @@
 
     <div class="field">
       <label for="set-apikey">API key</label>
-      <div class="desc">Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key for the chosen provider. With the WikiVibe hosted relay, the key and submitted food pass through Vercel; the relay does not intentionally store or log them.</div>
+      <div class="desc">Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key for the chosen provider.</div>
       <div class="key-row">
         <input class="input" id="set-apikey" type="password" placeholder="sk-…" spellcheck="false" autocomplete="off">
         <button class="icon-btn" id="set-keyvisible" type="button" role="switch" aria-checked="false" aria-label="Show API key" title="Show / hide key"><span class="icon-slot"></span></button>
@@ -319,6 +330,12 @@
         <button type="button" data-auth="api-key">api-key header</button>
         <button type="button" data-auth="none">No key</button>
       </div>
+    </div>
+
+    <div class="field">
+      <label for="set-maxtokens">Max output tokens</label>
+      <div class="desc" id="set-maxtokens-hint">256–32,000 tokens. Applies to analyses and recipes; higher limits may cost more. Saved automatically.</div>
+      <input class="input" id="set-maxtokens" type="number" min="256" max="32000" step="1" value="4096" inputmode="numeric" aria-describedby="set-maxtokens-hint">
     </div>
 
     <details class="accordion" style="margin-bottom:20px">
@@ -338,10 +355,7 @@
           <div class="desc">Lower is more consistent. 0–0.4 is best for nutrition data.</div>
           <input class="input" id="set-temperature" type="range" min="0" max="1" step="0.1" value="0.2" style="padding:0">
         </div>
-        <div class="field" style="margin-bottom:0">
-          <label for="set-maxtokens">Max response tokens</label>
-          <input class="input" id="set-maxtokens" type="number" min="256" max="32000" step="128" value="4096">
-        </div>
+
       </div>
     </details>
 
@@ -437,7 +451,7 @@
     <p>Analysing food or estimating calories sends your food description, attached photos and extracted recipe text to your chosen provider.</p>
     <p>Meals stay in this browser and do not sync across devices or site addresses. Download an all-meals backup before switching sites.</p>
     <p>Browser storage is not an encrypted vault. Use encrypted backups and a personal restricted API key. Keys and custom headers are kept only for this tab session, not in persistent settings. Protect your Netlify site.</p>
-    <p>Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key for the chosen provider. With the WikiVibe hosted relay, the key and submitted food pass through Vercel; the relay does not intentionally store or log them.</p>
+    <p>Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key for the chosen provider.</p>
     <button class="btn" type="button" data-footer-target="meal-library-toggle">Previous analyses &amp; meals</button>
   </section>
 </dialog>

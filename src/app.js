@@ -14,6 +14,7 @@ import { shouldAnalyzeOnEnter } from "./keyboard.js";
 import { initFooter } from "./footer.js";
 import { initDiary } from "./diary.js";
 import { initRecipeStudio } from './recipes.js';
+import { normalizeMaxTokens } from './output-tokens.js';
 import { createHistoryRepository } from "./history-store.js";
 import { initMealLibrary, diaryRequestText } from "./meal-library.js";
 let diary, mealLibrary, recipeStudio;
@@ -498,9 +499,6 @@ function syncTransport() {
   selector.querySelector('option[value="relay"]').disabled = isStaticHosting();
   selector.disabled = isStaticHosting();
   setValue('#set-transport', transport);
-  $('#static-hosting-notice').hidden = !isStaticHosting();
-  $('#hosted-relay-notice').hidden = transport !== 'hosted';
-  $('#direct-hosting-notice').hidden = transport === 'hosted';
 }
 
 function setValue(sel, v) { const el = $(sel); if (el) el.value = v ?? ""; }
@@ -519,7 +517,6 @@ function updateProviderHint() {
   if (!hint) return;
   const bits = [];
   if (preset.auth === "none") bits.push("This provider normally runs locally and needs no API key.");
-  if (p === 'wikivibe' && hasHostedRelay()) bits.push('Vercel forwards requests to WikiVibe using your own key. No provider browser CORS permission is needed for this route.');
   if (p === "custom") bits.push("Use a compatible <code>/chat/completions</code> endpoint.");
   if (p === "azure") bits.push("Replace the resource and deployment placeholders in the base URL. An <code>api-version</code> query is appended automatically.");
   if (p === "openrouter") bits.push("Use <code>openrouter.ai/api/v1</code>; vision models start with e.g. <code>openai/gpt-4o</code>.");
@@ -662,7 +659,7 @@ function wireEvents() {
   bindText("#set-keyheader", "keyHeader");
   bindText("#set-extra", "extraHeaders");
   $("#set-temperature").addEventListener("input", (e) => { state.settings.temperature = Number(e.target.value); $("#temperature-out").textContent = Number(e.target.value).toFixed(1); persist(); });
-  $("#set-maxtokens").addEventListener("change", (e) => { state.settings.maxTokens = Math.max(256, Math.min(32000, Number(e.target.value) || 2000)); persist(); });
+  $("#set-maxtokens").addEventListener("change", (e) => { state.settings.maxTokens = normalizeMaxTokens(e.target.value); e.target.value = String(state.settings.maxTokens); persist(); });
 
   $$("#auth-seg [data-auth]").forEach((b) => b.addEventListener("click", () => {
     state.settings.auth = b.dataset.auth;
@@ -826,7 +823,7 @@ function updateEndpointPreview() {
   const host = $("#endpoint-preview");
   if (!host) return;
   try {
-    host.textContent = (effectiveTransport(state.settings) === "hosted" ? "Via Vercel relay → " : "Request URL: ") + endpointUrl(state.settings.baseUrl, state.settings.provider, state.settings.endpointMode, state.settings.apiFormat || "auto");
+    host.textContent = (effectiveTransport(state.settings) === "hosted" ? "Via hosted relay → " : "Request URL: ") + endpointUrl(state.settings.baseUrl, state.settings.provider, state.settings.endpointMode, state.settings.apiFormat || "auto");
   } catch (error) { host.textContent = error.message; }
 }
 

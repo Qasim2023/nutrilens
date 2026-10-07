@@ -270,7 +270,7 @@ Could not generate recipes.|ترکیبیں نہیں بن سکیں۔
 Tell us what you would like to cook first.|پہلے بتائیں آپ کیا پکانا چاہتے ہیں۔
 Generation cancelled.|تیاری منسوخ کر دی گئی۔
 Nutrition is estimated, not medical advice. Allergy safety and cross-contact cannot be guaranteed; check ingredient labels and preparation.|غذائیت کا اندازہ طبی مشورہ نہیں۔ الرجی کی حفاظت یا کراس کانٹیکٹ نہ ہونے کی ضمانت نہیں؛ لیبل اور تیاری ضرور دیکھیں۔
-Uses the model selected in Settings. Your recipes are not saved.|ترتیبات میں منتخب ماڈل استعمال ہوگا۔ ترکیبیں محفوظ نہیں کی جائیں گی۔
+Uses the model selected in Settings. Save recipes to keep them in this browser.|ترتیبات میں منتخب ماڈل استعمال ہوگا۔ ترکیبیں اسی براؤزر میں رکھنے کے لیے محفوظ کریں۔
 Your kitchen, your way|آپ کا باورچی خانہ، آپ کا انداز
 Ready when you are|جب آپ تیار ہوں
 Add ingredients and any dietary preferences, then choose Generate 3 recipes. Detailed ideas will appear here.|اجزاء اور غذائی ترجیحات شامل کریں، پھر تین ترکیبیں بنائیں منتخب کریں۔ تفصیلی تجاویز یہاں آئیں گی۔

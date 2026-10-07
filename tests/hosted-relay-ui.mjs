@@ -43,11 +43,15 @@ try{
   await page.goto(origin);assert.equal(calls.length,0);
   await page.locator('#settings-btn').click();
   assert.equal(await page.locator('#set-apikey').inputValue(),'');
-  await page.locator('#set-provider').selectOption('wikivibe');
+  assert.equal(await page.locator('#set-provider option[value="wikivibe"]').count(),0);
+  await page.locator('#set-provider').selectOption('custom');
+  await page.locator('#set-baseurl').fill(WIKIVIBE_BASE_URL);
   assert.equal(await page.locator('#set-baseurl').inputValue(),WIKIVIBE_BASE_URL);
   assert.equal(await page.locator('#set-transport').inputValue(),'hosted');
   assert.equal(await page.locator('#set-transport').isDisabled(),true);
-  assert.equal(await page.locator('#hosted-relay-notice').isVisible(),true);
+  assert.equal(await page.locator('#static-hosting-notice').count(),0);
+  assert.doesNotMatch(await page.locator('#provider-hint').textContent(),/wikivibe|vercel/i);
+  assert.equal(await page.locator('#set-transport option[value="hosted"]').textContent(),'Hosted relay — your own provider key');
   await page.locator('#set-baseurl').fill('https://provider.example/v1');assert.equal(await page.locator('#set-transport').inputValue(),'direct');
   await page.locator('#set-baseurl').fill(WIKIVIBE_BASE_URL);assert.equal(await page.locator('#set-transport').inputValue(),'hosted');
   await page.locator('#models-btn').click();await page.waitForFunction(()=>document.querySelector('#models-status .bad'));
@@ -75,5 +79,5 @@ try{
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.locator('#settings-btn').click();await page.evaluate(()=>document.querySelector('.toasts').replaceChildren());
   await page.screenshot({path:'artifacts/hosted-relay-mobile.png',fullPage:true,animations:'disabled'});
-  console.log('PASS: built Vercel UI + actual relay handler; blank keys; automatic WikiVibe transport; visitor-key models/test/analysis; no direct provider/CORS requests; safe errors; origin rejection; visitor isolation and mobile layout. Fake provider only.');
+  console.log('PASS: built Vercel UI + actual relay handler; blank keys; automatic custom-endpoint transport; visitor-key models/test/analysis; no direct provider/CORS requests; safe errors; origin rejection; visitor isolation and mobile layout. Fake provider only.');
 }finally{await browser?.close();await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}

@@ -70,6 +70,12 @@ Parameters, encoding and size are bounded before password derivation. Wrong
 passwords and damaged ciphertext fail before any storage import. Existing import
 validation and rollback protections still apply after decryption.
 
+Explicitly saved Recipe Studio recipes are stored locally without connection
+settings or credentials. Markdown and JSON recipe exports are **unencrypted**
+and contain the recipe text and nutrition estimates, not application settings
+or keys. Recipe exports are separate from all-meals backups. Clearing browser
+site data removes saved recipes; there is no server-side recipe sync.
+
 Live diary, saved photos, extracted recipes, composer contents and analysis
 history remain **unencrypted** in this browser. The old **Download all meals
 backup** produces **unencrypted JSON** for compatibility. Both backup options

@@ -42,7 +42,7 @@ async function readEnvelope(req) {
 }
 function validateEnvelope(value) {
   if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!['path','method','body'].includes(key))) throw new RelayError(400,'Invalid relay request. URLs and custom provider headers cannot be forwarded.');
-  if(typeof value.path!=='string'||!Object.hasOwn(HOSTED_ROUTES,value.path)) throw new RelayError(403,'This relay only supports the approved WikiVibe routes.');
+  if(typeof value.path!=='string'||!Object.hasOwn(HOSTED_ROUTES,value.path)) throw new RelayError(403,'This relay only supports approved provider routes.');
   const method=HOSTED_ROUTES[value.path];
   if(value.method!==method) throw new RelayError(400,'Unsupported provider method.');
   if(method==='GET') {
@@ -106,7 +106,7 @@ export function createHostedRelay({fetchImpl=globalThis.fetch,now=Date.now,perKe
       res.statusCode=upstream.status;res.setHeader('Content-Type',/text\/event-stream/i.test(contentType)?'text/event-stream':'application/json');res.end(text);
     } catch(error) {
       const timedOut=timeout.aborted||error.name==='TimeoutError';
-      if(!res.destroyed&&!res.writableEnded)send(res,error instanceof RelayError?error.status:timedOut?504:502,error instanceof RelayError?error.message:timedOut?'Provider timed out. Try a faster model or smaller photo.':'The relay could not reach WikiVibe. Check provider availability and try again.');
+      if(!res.destroyed&&!res.writableEnded)send(res,error instanceof RelayError?error.status:timedOut?504:502,error instanceof RelayError?error.message:timedOut?'Provider timed out. Try a faster model or smaller photo.':'The relay could not reach the provider. Check provider availability and try again.');
     } finally {abort.abort();active--;res.off('close',onClose);}
   };
 }

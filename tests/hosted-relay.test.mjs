@@ -17,7 +17,7 @@ async function invoke(handler,{body=modelRequest,method='POST',requestHeaders={}
 const ok=()=>Response.json({data:[{id:'fixture-vision'}]});
 
 test('only the exact public provider routes are approved',()=>{
-  assert.equal(PRESETS.wikivibe.baseUrl,WIKIVIBE_BASE_URL);
+  assert.equal(Object.hasOwn(PRESETS,'wikivibe'),false);
   assert.equal(hostedProviderPath(WIKIVIBE_BASE_URL+'/models'),'/v1/models');
   for(const url of ['https://api.wikivibe.dev.evil.test/v1/models','http://api.wikivibe.dev/v1/models','https://user:secret@api.wikivibe.dev/v1/models','https://api.wikivibe.dev/v1/models?token=private','https://api.wikivibe.dev/v1/models#private','https://api.wikivibe.dev/admin','http://169.254.169.254/v1/models'])assert.throws(()=>hostedProviderPath(url));
 });
@@ -127,12 +127,12 @@ test('browser model discovery and connection testing call only same-origin hoste
   const old={fetch:globalThis.fetch,location:globalThis.location};const requests=[];
   globalThis.location={hostname:'example.vercel.app',protocol:'https:',origin:'https://example.vercel.app'};
   globalThis.fetch=async(url,options)=>{requests.push({url,options});return JSON.parse(options.body).path.endsWith('models')?ok():Response.json({choices:[{message:{content:'ok'}}]});};
-  const settings={baseUrl:WIKIVIBE_BASE_URL,provider:'wikivibe',apiKey:key,auth:'bearer',model:'fixture-vision',transport:'direct'};
+  const settings={baseUrl:WIKIVIBE_BASE_URL,provider:'custom',apiKey:key,auth:'bearer',model:'fixture-vision',transport:'direct'};
   try{
     assert.deepEqual(await listModels(settings),['fixture-vision']);await testConnection(settings);
     for(const {url,options}of requests){assert.equal(url,HOSTED_RELAY_PATH);assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,`Bearer ${key}`);assert.ok(!options.body.includes(key));assert.equal(options.credentials,'same-origin');}
     const before=requests.length;
-    await assert.rejects(listModels({...settings,apiKey:''}),/own WikiVibe API key/);
+    await assert.rejects(listModels({...settings,apiKey:''}),/provider API key/);
     await assert.rejects(listModels({...settings,extraHeaders:'X-Private: synthetic-private'}),/custom headers/);
     await assert.rejects(listModels({...settings,auth:'none'}),/Bearer authentication/);
     await assert.rejects(listModels({...settings,baseUrl:WIKIVIBE_BASE_URL+'?token=synthetic'}),/without query/);
@@ -148,4 +148,12 @@ test('the function has no key environment fallback, logs or general CORS bypass'
   assert.equal(config.functions['api/wikivibe.js'].maxDuration,60);
   const apiRule=config.headers.find(rule=>rule.source==='/api/wikivibe');
   assert.deepEqual(Object.fromEntries(apiRule.headers.map(({key,value})=>[key,value])),{'Cache-Control':'no-store','CDN-Cache-Control':'no-store','Vercel-CDN-Cache-Control':'no-store'});
+});
+
+
+test('relay route and availability errors use provider-neutral wording',async()=>{
+  const unavailable=createHostedRelay({fetchImpl:async()=>{throw new Error('Provider unavailable');}});
+  const responses=[await invoke(unavailable,{body:{path:'/admin',method:'GET'}}),await invoke(unavailable)];
+  assert.equal(responses[0].statusCode,403);assert.equal(responses[1].statusCode,502);
+  for(const res of responses)assert.doesNotMatch(JSON.parse(res.text).error.message,/wikivibe|vercel/i);
 });

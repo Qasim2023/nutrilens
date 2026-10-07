@@ -6,12 +6,10 @@
 
 import { CUSTOM_ENDPOINT, endpointUrl, buildHeaders, modelsUrl, requestJson, complete } from "./connection.js";
 export { endpointUrl, buildHeaders } from "./connection.js";
-import {WIKIVIBE_BASE_URL} from './hosted-provider.js';
 export const DEFAULT_BASE_URL = CUSTOM_ENDPOINT;
 export const DEFAULT_MODEL = "";
 
 export const PRESETS = {
-  wikivibe: { label: 'WikiVibe', baseUrl: WIKIVIBE_BASE_URL, auth: 'bearer', keyHeader: 'Authorization' },
   openai:      { label: "GPT",        baseUrl: "https://api.openai.com/v1",            auth: "bearer", keyHeader: "Authorization" },
   openrouter:  { label: "OpenRouter",    baseUrl: "https://openrouter.ai/api/v1",         auth: "bearer", keyHeader: "Authorization" },
   groq:        { label: "Groq",          baseUrl: "https://api.groq.com/openai/v1",       auth: "bearer", keyHeader: "Authorization" },

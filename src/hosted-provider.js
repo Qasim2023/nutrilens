@@ -13,7 +13,7 @@ export function hostedProviderPath(value) {
   const url = new URL(value);
   const route = url.pathname.replace(/\/+$/, '');
   if (!isHostedProvider(value) || url.username || url.password || url.search || url.hash || !Object.hasOwn(HOSTED_ROUTES, route)) {
-    throw new Error('The Vercel relay supports only WikiVibe models, chat/completions and responses URLs without query parameters.');
+    throw new Error('The hosted relay supports only approved provider models, chat/completions and responses URLs without query parameters.');
   }
   return route;
 }

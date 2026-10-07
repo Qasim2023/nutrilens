@@ -36,7 +36,8 @@ try{
   const page=await browser.newPage({viewport:{width:1360,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(({api})=>{if(!localStorage.getItem('nutrilens.settings.v1'))localStorage.setItem('nutrilens.settings.v1',JSON.stringify({connectionRevision:2,provider:'custom',baseUrl:api+'/v1',model:'mock',auth:'bearer',apiKey:'synthetic-key-for-cors-test',transport:'relay',language:'en'}));},{api});
   await page.goto(`http://127.0.0.1:${server.address().port}${prefix}`);
-  await page.locator('#settings-btn').click();await page.waitForSelector('#static-hosting-notice:not([hidden])');
+  await page.locator('#settings-btn').click();await page.waitForSelector('#drawer.open');
+  assert.equal(await page.locator('#static-hosting-notice').count(),0);
   assert.equal(await page.locator('#set-transport').inputValue(),'direct');assert.equal(await page.locator('#set-transport').isDisabled(),true);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('nutrilens.settings.v1')).transport),'direct');
   await page.locator('#models-btn').click();await page.waitForFunction(()=>document.querySelector('#available-models option[value="mock"]'));

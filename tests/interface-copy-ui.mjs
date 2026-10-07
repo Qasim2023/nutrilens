@@ -23,11 +23,15 @@ try{
   const assertCopy=async()=>{
     const text=await page.evaluate(()=>document.body.textContent);
     assert.doesNotMatch(text,/\b(?:AI|KI|IA)\b|ИИ|OpenAI|xAI|Bring your own API/);
+    assert.doesNotMatch(text,/wikivibe|vercel|Hosted website mode|Use your own API key\. Never put an API key/i);
     const attrs=await page.evaluate(()=>[...document.querySelectorAll('[title],[aria-label],[placeholder]')].flatMap(el=>['title','aria-label','placeholder'].map(attr=>el.getAttribute(attr)||'')).join('\n'));
     assert.doesNotMatch(attrs,/\bAI\b|Bring your own API/);
+    assert.doesNotMatch(attrs,/wikivibe|vercel|Hosted website mode/i);
   };
   assert.equal(await page.locator('.hero-chips .chip').count(),3);await assertCopy();
   await page.locator('#settings-btn').click();
+  assert.equal(await page.locator('#static-hosting-notice').count(),0);
+  assert.equal(await page.locator('#set-provider option[value="wikivibe"]').count(),0);
   for(const language of LANGUAGES){
     await page.locator('#set-language').selectOption(language.code);
     await page.waitForFunction(code=>document.documentElement.lang===code,language.code);

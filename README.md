@@ -26,6 +26,25 @@ The app ships with no API key, account, default endpoint or selected model. Each
 
 Preferences save in this browser; keys and custom headers remain tab-scoped. Existing visitor settings and local history are preserved when upgrading, and migrations never inject a maintainer endpoint. No browser data is copied into a deployment.
 
+## Recipes and output limits
+
+- Open **Recipes**, describe what you want to cook, and generate recipe ideas.
+- Choose **Save recipe** on any idea to keep the full recipe in this browser.
+  Open **Saved recipes** to revisit it after a reload. Removing a saved recipe
+  requires confirmation and does not change diary meals or analysis history.
+- Choose **Markdown (.md)** for a readable recipe file or **JSON (.json)** for
+  structured recipe data, then use **Export recipe** or **Export all** for the
+  currently selected view. Exports include ingredients, steps, tips, swaps and
+  per-serving nutrition estimates. They exclude connection settings and keys.
+- Recipes are not saved automatically or synced between devices. Browser storage
+  and recipe exports are unencrypted; export a copy before clearing site data.
+  Recipe exports are separate from the existing all-meals backup/restore feature.
+- **Settings → Max output tokens** is saved automatically (default: 4,096;
+  range: 256–32,000 whole tokens). It applies to nutrition analysis, recipe
+  generation and their repair attempts. A connection test still uses a small
+  256-token request. Higher limits allow longer replies and may cost more;
+  the chosen provider/model can impose a lower limit.
+
 ## Compatibility
 
 - Base URLs, full `/chat/completions` URLs and full `/responses` URLs are supported. Query parameters are retained and the path is not duplicated.

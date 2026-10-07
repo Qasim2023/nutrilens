@@ -1,16 +1,19 @@
 /* ======================================================================
    NutriLens — Recipe Studio UI
-   Recipes exist in memory only; the sole preference saved is guide dismissal.
+   Generated ideas stay in memory until explicitly saved to this browser.
    ====================================================================== */
 
 import { generateRecipes } from "./recipe-ai.js";
 import { esc, fmt } from "./render.js";
 import { translate } from "./i18n.js";
+import { loadSavedRecipes, saveRecipe, removeSavedRecipe, findSavedRecipe, RECIPES_KEY } from "./recipe-store.js";
+import { exportRecipes } from "./recipe-export.js";
+import { confirmDelete } from "./delete-confirmation.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const GUIDE_KEY = "nutrilens.recipesGuideDismissed.v1";
 
-export function initRecipeStudio({ getSettings, isProviderReady, openSettings }) {
+export function initRecipeStudio({ getSettings, isProviderReady, openSettings, confirmRemoval = confirmDelete }) {
   const form = $("#recipe-form");
   const request = $("#recipe-instructions");
   const servings = $("#recipe-servings");
@@ -26,6 +29,16 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings })
   const resultsList = $("#recipe-results-list");
   const announcement = $("#recipe-announcement");
   const guide = $("#recipe-guide");
+  const generatedView = $("#recipe-show-generated");
+  const savedView = $("#recipe-show-saved");
+  const savedCount = $("#recipe-saved-count");
+  const savedEmpty = $("#recipe-saved-empty");
+  const savedNote = $("#recipe-saved-note");
+  const exportFormat = $("#recipe-export-format");
+  const exportAll = $("#recipe-export-all");
+  let savedRecipes = [];
+  let showingSaved = false;
+  let savedAvailable = true;
   let controller = null;
   let busy = false;
   let recipes = null;
@@ -45,8 +58,9 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings })
     guide.hidden = guideWasDismissed();
   }
 
-  function renderRecipe(recipe) {
+  function renderRecipe(recipe, index) {
     const nutrition = recipe.nutrition;
+    const isSaved = !showingSaved && Boolean(findSavedRecipe(savedRecipes, recipe));
     const totalMinutes = recipe.prep_minutes + recipe.cook_minutes;
     const tags = recipe.tags.length
       ? `<div class="recipe-tags">${recipe.tags.map(tag => `<span class="recipe-tag" data-i18n-skip>${esc(tag)}</span>`).join("")}</div>`
@@ -76,13 +90,94 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings })
         <section><h4 class="recipe-detail-heading"><span aria-hidden="true">↗</span>${tr("Steps")}</h4><ol class="recipe-steps">${steps}</ol></section>
       </div>
       ${tip}${swaps}
+      <div class="recipe-card-actions">
+        ${showingSaved
+          ? `<button class="btn btn-ghost btn-sm btn-danger" type="button" data-recipe-action="remove" data-recipe-index="${index}">${tr("Remove recipe")}</button>`
+          : `<button class="btn btn-sm" type="button" data-recipe-action="save" data-recipe-index="${index}" ${isSaved ? "disabled" : ""}>${tr(isSaved ? "Saved" : "Save recipe")}</button>`}
+        <button class="btn btn-ghost btn-sm" type="button" data-recipe-action="export" data-recipe-index="${index}">${tr("Export recipe")}</button>
+      </div>
     </article>`;
   }
 
+  function visibleRecipes() {
+    return showingSaved ? savedRecipes.map(entry => entry.recipe) : recipes || [];
+  }
+
   function renderResults() {
-    const hasRecipes = Boolean(recipes?.length);
-    empty.hidden = hasRecipes;
-    resultsList.innerHTML = hasRecipes ? recipes.map(renderRecipe).join("") : "";
+    const visible = visibleRecipes();
+    empty.hidden = showingSaved || Boolean(visible.length);
+    savedEmpty.hidden = !showingSaved || !savedAvailable || Boolean(visible.length);
+    savedNote.hidden = !showingSaved;
+    savedCount.textContent = String(savedRecipes.length);
+    generatedView.setAttribute("aria-pressed", String(!showingSaved));
+    savedView.setAttribute("aria-pressed", String(showingSaved));
+    exportAll.disabled = !visible.length;
+    resultsList.innerHTML = visible.map(renderRecipe).join("");
+  }
+
+  function showError(error) {
+    errorNote.textContent = tr(error.message || "Please try again.");
+    errorNote.hidden = false;
+  }
+
+  function refreshSaved() {
+    try {
+      savedRecipes = loadSavedRecipes();
+      savedAvailable = true;
+    } catch (error) {
+      savedAvailable = false;
+      showError(error);
+    }
+  }
+
+  function download(values) {
+    const file = exportRecipes(values, { format: exportFormat.value });
+    const url = URL.createObjectURL(new Blob([file.content], { type: file.mime }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.filename;
+    try {
+      document.body.append(link);
+      link.click();
+      announcement.textContent = tr("Recipes exported.");
+    } finally {
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  }
+
+  async function recipeAction(event) {
+    const button = event.target.closest("[data-recipe-action]");
+    if (!button) return;
+    const index = Number(button.dataset.recipeIndex);
+    const recipe = visibleRecipes()[index];
+    if (!recipe) return;
+    errorNote.hidden = true;
+    try {
+      if (button.dataset.recipeAction === "export") {
+        download([recipe]);
+        return;
+      }
+      if (button.dataset.recipeAction === "save") {
+        saveRecipe(recipe);
+        refreshSaved();
+        announcement.textContent = tr("Recipe saved.");
+      } else if (button.dataset.recipeAction === "remove" && showingSaved) {
+        const entry = savedRecipes[index];
+        const confirmed = await confirmRemoval({
+          title: "Remove saved recipe?", subject: entry.recipe.title,
+          message: "Remove this recipe from your saved recipes?", confirmLabel: "Remove recipe",
+          fallbackFocus: "#recipe-show-saved",
+        });
+        if (!confirmed) return;
+        savedRecipes = removeSavedRecipe(entry.id);
+        savedAvailable = true;
+        announcement.textContent = tr("Recipe removed.");
+      }
+      renderResults();
+      if (showingSaved) savedView.focus();
+      else resultsList.querySelector(`[data-recipe-action="export"][data-recipe-index="${index}"]`)?.focus();
+    } catch (error) { showError(error); }
   }
 
   function updateButton() {
@@ -108,6 +203,8 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings })
     setupNote.hidden = true;
     errorNote.hidden = true;
     announcement.textContent = "";
+    showingSaved = false;
+    renderResults();
     status.hidden = false;
     statusText.textContent = tr("Creating recipe ideas…");
     controller = new AbortController();
@@ -123,6 +220,7 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings })
         signal: controller.signal,
       });
       recipes = result;
+      showingSaved = false;
       renderResults();
       announcement.textContent = `${result.length} ${tr("recipes ready.")}`;
       status.hidden = true;
@@ -150,6 +248,16 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings })
     }
   }
 
+  generatedView.addEventListener("click", () => { showingSaved = false; renderResults(); });
+  savedView.addEventListener("click", () => { refreshSaved(); showingSaved = true; renderResults(); });
+  resultsList.addEventListener("click", recipeAction);
+  exportAll.addEventListener("click", () => {
+    try { download(visibleRecipes()); }
+    catch (error) { showError(error); }
+  });
+  globalThis.addEventListener?.("storage", event => {
+    if (event.key === RECIPES_KEY || event.key === null) { refreshSaved(); renderResults(); }
+  });
   form.addEventListener("submit", generate);
   cancelButton.addEventListener("click", () => controller?.abort());
   $("#recipe-guide-dismiss").addEventListener("click", () => {
@@ -165,11 +273,12 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings })
     request.focus();
   }));
 
+  refreshSaved();
   renderResults();
   updateButton();
   return {
     refreshLanguage() {
-      if (recipes) renderResults();
+      renderResults();
       if (!busy) updateButton();
       if (statusText && !status.hidden && !busy) statusText.textContent = tr("Generation cancelled.");
     },

@@ -1,6 +1,6 @@
 /* ======================================================================
    NutriLens — AI recipe generation
-   Uses the user's configured OpenAI-compatible provider; nothing is saved.
+   Uses the user's configured provider; saving is an explicit UI action.
    ====================================================================== */
 
 import { complete } from "./connection.js";
