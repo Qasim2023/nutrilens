@@ -105,6 +105,6 @@ test('retired provider presets migrate to Custom without resetting the visitor c
     for(const key of ['baseUrl','model','auth','apiKey','theme'])assert.equal(settings[key],connection[key]);
     const stored=JSON.parse(localStorage.getItem('nutrilens.settings.v1'));
     assert.equal(stored.provider,'custom');assert.equal(stored.apiKey,undefined);
-    assert.equal(JSON.parse(sessionStorage.getItem('nutrilens.credentials.v1')).apiKey,connection.apiKey);
+    assert.equal(JSON.parse(localStorage.getItem('nutrilens.credentials.v1')).apiKey,connection.apiKey);assert.equal(sessionStorage.getItem('nutrilens.credentials.v1'),null);
   }finally{Object.assign(globalThis,old);}
 });

@@ -56,8 +56,7 @@ Keys and submitted food descriptions/photos/recipe text pass through Vercel and
 then to WikiVibe. The function does not intentionally log or persist raw keys,
 requests or responses, and API responses prohibit browser/CDN caching. Its
 per-key rate limiter holds only short-lived SHA-256 hashes in instance memory.
-Browser keys remain in tab-scoped sessionStorage; browser extensions, XSS, session
-restore and someone controlling the browser profile can still expose them.
+Browser keys remain in localStorage so they survive refreshes and browser restarts; browser extensions, XSS and someone controlling the browser profile can still expose them.
 Hosting/provider processing policies still apply; this is not end-to-end encryption.
 
 Requests/responses are capped at 4 MiB; enable photo compression, especially when

@@ -2,6 +2,7 @@ import { effectiveTransport, isStaticHosting } from "./hosting.js";
 import {HOSTED_RELAY_PATH, hostedProviderPath, HOSTED_ROUTES} from './hosted-provider.js';
 import {validateEndpoint, validateHeader} from "./security-policy.js";
 import {normalizeMaxTokens} from "./output-tokens.js";
+import {isRelayOriginTrusted, requestRelayOriginTrust} from "./relay-trust.js";
 
 // URL handling and transport shared by connection tests, model discovery and analysis.
 // Fresh installs have no provider endpoint or account-specific configuration.
@@ -112,10 +113,28 @@ export async function requestJson(settings, url, { method = "POST", body, signal
   }
   let res;
   try {
-    res = await fetch(hostedRequest ? HOSTED_RELAY_PATH : useRelay ? "/api/relay" : url, hostedRequest || (useRelay ? {
-      method: "POST", headers: { "Content-Type": "application/json", "X-NutriLens-Relay": "1" },
-      body: JSON.stringify({ url, method, headers: buildHeaders(settings), body }), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store",
-    } : { method, headers: buildHeaders(settings), body: body === undefined ? undefined : JSON.stringify(body), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store" }));
+    if (hostedRequest) {
+      res = await fetch(HOSTED_RELAY_PATH, hostedRequest);
+    } else if (useRelay) {
+      const origin = new URL(url).origin;
+      const envelope = {url, method, headers: buildHeaders(settings), body};
+      if (isRelayOriginTrusted(url)) envelope.trustedOrigin = origin;
+      const relay = () => fetch("/api/relay", {
+        method: "POST", headers: { "Content-Type": "application/json", "X-NutriLens-Relay": "1" },
+        body: JSON.stringify(envelope), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store",
+      });
+      res = await relay();
+      if (res.status === 403 && res.headers.get("X-NutriLens-Relay-Error") === "origin-not-allowed") {
+        const rejection = await res.clone().json().catch(() => null);
+        if (rejection?.error?.code === "RELAY_ORIGIN_NOT_ALLOWED" && !envelope.trustedOrigin && !combined.aborted && requestRelayOriginTrust(url)) {
+          await res.body?.cancel();
+          envelope.trustedOrigin = origin;
+          res = await relay();
+        }
+      }
+    } else {
+      res = await fetch(url, {method, headers: buildHeaders(settings), body: body === undefined ? undefined : JSON.stringify(body), signal: combined, redirect: "error", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store"});
+    }
   } catch (error) {
     if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
     if (timeout.aborted) throw new Error("The endpoint timed out after 120 seconds. Try another model or a smaller request.");
@@ -146,10 +165,27 @@ export async function requestJson(settings, url, { method = "POST", body, signal
     if (new TextEncoder().encode(text).length > limit) throw new Error('Provider response is too large (24 MB maximum).');
   }
   if (!res.ok) {
-    let detail = text;
-    try { const j = JSON.parse(text); detail = j.error?.message || j.message || j.error || text; } catch {}
+    let detail = text, code;
+    try { const j = JSON.parse(text); detail = j.error?.message || j.message || j.error || text; code = j.error?.code; } catch {}
     const labels = { 401: "API key missing or rejected", 403: "Access denied", 404: "Endpoint or model not found", 429: "Rate limit or quota exceeded", 502: "Relay could not reach the provider", 504: "Provider timed out" };
     const error = new Error(`HTTP ${res.status}: ${labels[res.status] || "Request rejected"}. ${redact(detail, settings)}`);
+    error.status = res.status;
+    if (typeof code === "string") error.code = code;
+    throw error;
+  }
+  const contentType = res.headers.get("content-type") || "";
+  const responseBody = text.trimStart();
+  // Some API gateways serve their website with HTTP 200 for missing routes.
+  // Detect HTML before JSON/SSE parsing, but still accept valid JSON from a
+  // provider that accidentally labels its response text/html.
+  const html = /^(?:<!doctype\s+html\b|<(?:html|head|body)\b)/i.test(responseBody)
+    || (/^(?:text\/html|application\/xhtml\+xml)(?:\s*;|$)/i.test(contentType) && responseBody.startsWith("<"));
+  if (html) {
+    const target = new URL(url);
+    // Queries and page contents can contain secrets; never include them here.
+    const endpoint = redact(target.origin + target.pathname, settings);
+    const error = new Error(`The endpoint returned an HTML page instead of a usable API response at ${endpoint}. Check the API base URL and API format in Settings; use the provider's API endpoint, not its website or login page.`);
+    error.code = "API_RESPONSE_HTML";
     error.status = res.status;
     throw error;
   }
@@ -178,7 +214,7 @@ function makeBody(settings, messages, protocol, maxTokens) {
   return body;
 }
 
-export async function complete(settings, messages, { signal, maxTokens = settings.maxTokens, onStatus = () => {} } = {}) {
+export async function complete(settings, messages, { signal, maxTokens = settings.maxTokens } = {}) {
   maxTokens = normalizeMaxTokens(maxTokens);
   const auto = !settings.apiFormat || settings.apiFormat === "auto";
   let protocol = settings.apiFormat === "responses" || /\/responses\/?(?:\?|$)/.test(settings.baseUrl) ? "responses" : "chat";
@@ -188,16 +224,18 @@ export async function complete(settings, messages, { signal, maxTokens = setting
       const json = await requestJson(settings, endpointUrl(settings.baseUrl, settings.provider, settings.endpointMode, protocol), { body, signal });
       return { json, text: responseText(json), protocol };
     } catch (error) {
-      if (auto && protocol === "chat" && (error.status === 404 || error.status === 405 || /responses.*(only|use|support)|not.*support.*chat|use.*responses/i.test(error.message))) {
+      const routeRejected = error.status === 404 || error.status === 405
+        || (error.code === "API_RESPONSE_HTML" && error.status >= 200 && error.status < 300)
+        || ((!error.status || [400, 422, 501].includes(error.status)) && /responses.*(only|use|support)|not.*support.*chat|use.*responses/i.test(error.message));
+      if (auto && protocol === "chat" && routeRejected && !signal?.aborted) {
         protocol = "responses";
         body = makeBody(settings, messages, protocol, maxTokens);
-        onStatus("Trying the Responses API…");
         continue;
       }
       if ([400, 422].includes(error.status)) {
         if (/response_format|json_object|text.format/i.test(error.message) && (body.response_format || body.text)) {
           delete body.response_format; delete body.text;
-          onStatus("Retrying without forced JSON mode…"); continue;
+          continue;
         }
         if (/temperature/i.test(error.message) && body.temperature !== undefined) { delete body.temperature; continue; }
         if (/max_tokens|max_completion_tokens/i.test(error.message) && body.max_tokens !== undefined) { body.max_completion_tokens = body.max_tokens; delete body.max_tokens; continue; }

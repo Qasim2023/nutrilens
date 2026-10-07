@@ -40,19 +40,28 @@ an unshared URL, CSP and noindex are not access controls.
   data out of the deployed artifact. Existing rendered user/provider text is
   escaped; stored images accept only supported raster data URLs.
 
+## Custom local relay providers
+
+Unlisted provider origins are blocked until explicitly approved in the local app.
+The trust dialog shows the exact origin and warns that credentials and submitted
+food data will be sent to it. Browser-local approvals are included only for the
+matching origin on each relay request; they do not disable the allowlist globally.
+Reset settings clears approvals. The server continues to require its exact local
+Host/Origin and custom header, validates HTTPS (or loopback HTTP), restricts API
+routes and methods, filters unsafe headers, and refuses redirects. This consent
+feature is for the loopback app only; static/hosted provider rules are unchanged.
+
 ## Credentials
 
-API keys and custom header values are removed from persistent localStorage
-settings and kept in tab-scoped sessionStorage, with an in-memory fallback when
-session storage is unavailable. Existing credentials migrate on first load.
-Reload retains them; a new independent tab needs a key. Browser session restore
-or tab duplication may restore/copy sessionStorage. Clear the key or reset
-settings when finished on a shared device.
+API keys and custom header values are stored in browser localStorage so they
+survive page reloads and browser restarts. Existing tab-scoped credentials
+migrate on first load. Reset settings removes the stored credentials; use it
+when finished on a shared device.
 
-Session storage is NOT encryption and remains readable by same-origin JavaScript,
+Browser storage is NOT encryption and remains readable by same-origin JavaScript,
 XSS, browser extensions and someone controlling the browser profile. If persistent
-storage cannot be written, a legacy credential copy may remain; clear browser site
-data on a shared device. Use restricted personal keys with provider spend caps.
+storage cannot be written, credentials fall back to session storage for the
+current tab. Use restricted personal keys with provider spend caps.
 Keeping shared service secrets out of the browser requires a real authenticated
 backend, not a secret embedded in frontend code.
 

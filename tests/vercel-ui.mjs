@@ -61,13 +61,18 @@ try {
   await page.locator('#close-drawer').click();await page.locator('#input').fill('One apple');await page.locator('#send-btn').click();
   await page.waitForFunction(()=>document.querySelector('#result .total-kcal')?.textContent==='95kcal');
   assert.ok(calls.length>=3);assert.ok(calls.every(call=>call.auth==='Bearer synthetic-visitor-key'));
-  const credentials=await page.evaluate(()=>({persistent:localStorage.getItem('nutrilens.settings.v1'),tab:JSON.parse(sessionStorage.getItem('nutrilens.credentials.v1'))}));
-  assert.ok(!credentials.persistent.includes('synthetic-visitor-key'));assert.equal(credentials.tab.apiKey,'synthetic-visitor-key');
+  await page.reload();await page.locator('#settings-btn').click();
+  assert.equal(await page.locator('#set-baseurl').inputValue(),origin+'/v1');assert.equal(await page.locator('#set-apikey').inputValue(),'synthetic-visitor-key');assert.equal(await page.locator('#set-model').inputValue(),'mock-vision');assert.equal(await page.locator('#available-models').inputValue(),'mock-vision');
+  const credentials=await page.evaluate(()=>({settings:localStorage.getItem('nutrilens.settings.v1'),persistent:JSON.parse(localStorage.getItem('nutrilens.credentials.v1')),session:sessionStorage.getItem('nutrilens.credentials.v1')}));
+  assert.ok(!credentials.settings.includes('synthetic-visitor-key'));assert.equal(credentials.persistent.apiKey,'synthetic-visitor-key');assert.equal(credentials.session,null);
+  page.once('dialog',dialog=>dialog.accept());await page.locator('#reset-btn').click();
+  await page.waitForFunction(()=>document.querySelector('#set-baseurl').value===''&&document.querySelector('#set-apikey').value===''&&document.querySelector('#set-model').value==='');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('nutrilens.credentials.v1')),null);
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.screenshot({path:'artifacts/vercel-mobile.png',fullPage:true,animations:'disabled'});
   const independent=await browser.newContext();const fresh=await independent.newPage();await fresh.goto(origin);
   const second=await fresh.evaluate(async()=>{const {loadSettings}=await import('/src/store.js');return loadSettings();});
   assert.equal(second.apiKey,'');assert.equal(second.baseUrl,'');assert.equal(second.model,'');await independent.close();
   assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
-  console.log('PASS: Vercel artifact, exact security headers, empty visitor data/settings, no unconfigured API calls, hidden-file 404s, visitor-owned key/model/test/analysis, tab-only credentials, independent visitor isolation, and mobile layout. Synthetic data only.');
+  console.log('PASS: Vercel artifact, exact security headers, empty visitor data/settings, no unconfigured API calls, hidden-file 404s, visitor-owned key/model/test/analysis, browser-persistent credentials, independent visitor isolation, and mobile layout. Synthetic data only.');
 } finally {await browser?.close();await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}

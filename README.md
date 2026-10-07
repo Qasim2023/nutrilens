@@ -24,7 +24,7 @@ The app ships with no API key, account, default endpoint or selected model. Each
 4. Click **Test connection**. This sends a small prompt and may consume provider quota.
 5. Attach a photo and/or describe food, then click **Analyse**. Use a vision-capable model for photos.
 
-Preferences save in this browser; keys and custom headers remain tab-scoped. Existing visitor settings and local history are preserved when upgrading, and migrations never inject a maintainer endpoint. No browser data is copied into a deployment.
+Preferences, provider URL, selected model, API key and custom headers save in this browser and survive refreshes. Existing visitor settings and local history are preserved when upgrading, and migrations never inject a maintainer endpoint. No browser data is copied into a deployment.
 
 ## Recipes and output limits
 
@@ -39,7 +39,7 @@ Preferences save in this browser; keys and custom headers remain tab-scoped. Exi
 - Recipes are not saved automatically or synced between devices. Browser storage
   and recipe exports are unencrypted; export a copy before clearing site data.
   Recipe exports are separate from the existing all-meals backup/restore feature.
-- **Settings → Max output tokens** is saved automatically (default: 4,096;
+- **Settings → Max output tokens** is saved automatically (default: 20,000;
   range: 256–32,000 whole tokens). It applies to nutrition analysis, recipe
   generation and their repair attempts. A connection test still uses a small
   256-token request. Higher limits allow longer replies and may cost more;
@@ -48,7 +48,7 @@ Preferences save in this browser; keys and custom headers remain tab-scoped. Exi
 ## Compatibility
 
 - Base URLs, full `/chat/completions` URLs and full `/responses` URLs are supported. Query parameters are retained and the path is not duplicated.
-- **API format → Auto** starts with Chat Completions (or Responses for a full Responses URL), falling back when the route is unsupported. Pick an explicit format if your provider needs one.
+- **API format → Auto** starts with Chat Completions (or Responses for a full Responses URL), falling back when the route is unsupported, including gateways that return their HTML website with HTTP 200 for a missing route. It tries Responses once; explicit formats never silently switch. If both routes return HTML, check the API base URL rather than the provider website/login URL. Authentication, quota and server errors do not trigger format switches.
 - JSON and server-sent-event output are parsed for both formats.
 - Unsupported JSON mode, temperature and legacy token parameters receive bounded compatibility retries.
 - API errors are shown instead of fake results. Bad JSON receives one repair attempt; HTML, empty responses and incomplete output are rejected.
@@ -58,11 +58,13 @@ Preferences save in this browser; keys and custom headers remain tab-scoped. Exi
 
 ## Privacy and relay security
 
-Your API key and custom headers are kept in tab-scoped sessionStorage, not persistent localStorage settings. Reload retains them; a new independent tab needs credentials. Browser session restoration may retain them. This is not an encrypted vault: same-origin JavaScript, extensions, or someone controlling the browser profile can still access them. The local server forwards the key and food data to your chosen provider, does not persist credentials, and does not log request bodies. Your provider's data and billing policies still apply.
+Your API key, provider URL, selected model and custom headers are kept in this browser's localStorage so they survive refreshes and browser restarts. Reset settings removes them. This is not an encrypted vault: same-origin JavaScript, extensions, or someone controlling the browser profile can still access them. The local server forwards the key and food data to your chosen provider, does not persist credentials, and does not log request bodies. Your provider's data and billing policies still apply.
 
 The server binds only to `127.0.0.1`. Relay requests require the app's exact origin plus a custom header. Upstream redirects are refused; other origins and non-API paths are rejected. Only public app assets are served (not `.env` or server source).
 
-The listed public provider/local-runner origins are trusted by default. For another custom provider, explicitly trust its origin before starting the server:
+The listed public provider/local-runner origins are trusted by default. For a custom provider, choose **Local relay**, enter its API URL and key, then click **Fetch available models** or **Test connection**. Confirm the dialog only if you trust the exact origin shown: your key and submitted food data will be sent there. The approval is remembered in this browser and removed by **Reset settings to defaults**. You do not need to restart the server or enable provider CORS.
+
+Alternatively, pre-approve origins before starting the server:
 
 ```powershell
 $env:NUTRILENS_ALLOWED_ORIGINS = "https://your-provider.example"
@@ -204,7 +206,7 @@ run from the Actions tab.
   GitHub Pages cannot run `server.mjs` or its `/api/relay` endpoint. If the provider
   blocks browser requests, configure a separately hosted trusted authenticated
   proxy as the API endpoint; do not put a shared proxy secret in the site.
-- Each user's API key stays in that tab's sessionStorage and is sent to the
+- Each user's API key stays in this browser's localStorage and is sent to the
   configured endpoint. There is no server-side secret storage on the static site.
   Use a personal restricted key, not a shared production credential.
 - Settings, meal history, and diary data are browser-local, not synced between
@@ -240,7 +242,7 @@ Built 64-bit Windows executables are in `release/`:
 
 The desktop app includes its own browser runtime and local server. Closing its window stops the server. It uses loopback port **17843** and will report an error rather than open an unrelated service if that port is occupied. Only one NutriLens desktop instance runs at a time.
 
-Open **Settings** on first launch to configure your AI provider, key, and model. Remote AI still needs internet access and any applicable provider account/quota; local providers work when their server is running. Manual diary entries do not require AI. Desktop settings, history, and diary data are saved in the app's Windows user profile, shared by portable and installed launches. The portable EXE is portable software, not portable user data. Data from a regular browser is separate and is not automatically imported. API keys remain in tab-scoped session storage, not an encrypted vault.
+Open **Settings** on first launch to configure your AI provider, key, and model. Remote AI still needs internet access and any applicable provider account/quota; local providers work when their server is running. Manual diary entries do not require AI. Desktop settings, history, and diary data are saved in the app's Windows user profile, shared by portable and installed launches. The portable EXE is portable software, not portable user data. Data from a regular browser is separate and is not automatically imported. API keys remain in browser localStorage, not an encrypted vault; Reset settings removes them.
 
 These locally built executables are **not code-signed**, so Windows may show an unknown-publisher or SmartScreen warning. No signing certificate is included.
 

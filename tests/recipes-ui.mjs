@@ -44,7 +44,7 @@ try {
   await page.locator('#settings-btn').click();
   const tokens = page.locator('#set-maxtokens');
   assert.equal(await tokens.isVisible(), true, 'token control is not hidden under Advanced');
-  for (const [value, expected] of [['50000', '32000'], ['8192.6', '8193'], ['', '4096'], ['8192', '8192']]) {
+  for (const [value, expected] of [['50000', '32000'], ['8192.6', '8193'], ['', '20000'], ['8192', '8192']]) {
     await tokens.fill(value); await tokens.press('Tab');
     assert.equal(await tokens.inputValue(), expected);
   }

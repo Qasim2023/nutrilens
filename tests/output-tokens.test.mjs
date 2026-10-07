@@ -10,8 +10,8 @@ import { recipe } from './recipe-studio-fixture.mjs';
 const settings = { baseUrl: 'https://example.test/v1', model: 'fixture', auth: 'none', transport: 'direct', apiFormat: 'chat', maxTokens: 8192, language: 'en' };
 
 test('output tokens are finite whole numbers in the supported range, with a consistent default', () => {
-  assert.deepEqual(OUTPUT_TOKEN_LIMITS, { min: 256, max: 32000, default: 4096 });
-  for (const value of [undefined, null, '', ' ', 'no', NaN, Infinity, -Infinity, true, [], {}]) assert.equal(normalizeMaxTokens(value), 4096, String(value));
+  assert.deepEqual(OUTPUT_TOKEN_LIMITS, { min: 256, max: 32000, default: 20000 });
+  for (const value of [undefined, null, '', ' ', 'no', NaN, Infinity, -Infinity, true, [], {}]) assert.equal(normalizeMaxTokens(value), 20000, String(value));
   for (const [value, expected] of [[0, 256], [-100, 256], [255, 256], [256, 256], [4096.6, 4097], ['8192', 8192], [32001, 32000], [1e12, 32000]]) assert.equal(normalizeMaxTokens(value), expected);
 });
 
@@ -20,10 +20,10 @@ test('token settings survive reload and malformed/legacy settings are normalized
   const data = new Map();
   globalThis.localStorage = { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
   try {
-    assert.equal(loadSettings().maxTokens, 4096);
+    assert.equal(loadSettings().maxTokens, 20000);
     saveSettings({ ...defaults, maxTokens: 16384 });
     assert.equal(loadSettings().maxTokens, 16384);
-    for (const [value, expected] of [['7000', 7000], [512.7, 513], [-1, 256], [99999, 32000], [null, 4096], ['invalid', 4096]]) {
+    for (const [value, expected] of [['7000', 7000], [512.7, 513], [-1, 256], [99999, 32000], [null, 20000], ['invalid', 20000]]) {
       data.set('nutrilens.settings.v1', JSON.stringify({ ...defaults, maxTokens: value }));
       assert.equal(loadSettings().maxTokens, expected);
       assert.equal(JSON.parse(data.get('nutrilens.settings.v1')).maxTokens, expected);
@@ -46,7 +46,7 @@ test('chat, reasoning chat and Responses request bodies honor the selected token
       await complete({ ...settings, apiFormat, model }, [{ role: 'user', content: 'test' }], { maxTokens: 256 });
       assert.equal(body[field], 256, 'connection tests retain their explicit small limit');
       await complete({ ...settings, apiFormat, model, maxTokens: NaN }, [{ role: 'user', content: 'test' }]);
-      assert.equal(body[field], 4096);
+      assert.equal(body[field], 20000);
     }
   } finally { globalThis.fetch = previous; }
 });
@@ -75,7 +75,7 @@ test('truncated responses direct the user to the visible Max output tokens setti
 test('max output tokens is visible outside Advanced, with matching bounds and translated UI', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(html.indexOf('id="set-maxtokens"') < html.indexOf('<summary>Advanced request options</summary>'));
-  assert.match(html, /id="set-maxtokens"[^>]+min="256"[^>]+max="32000"[^>]+step="1"/);
+  assert.match(html, /id="set-maxtokens"[^>]+min="256"[^>]+max="32000"[^>]+step="1"[^>]+value="20000"/);
   assert.doesNotMatch(html, /Your recipes are not saved/);
   for (const language of ['nb', 'pl', 'de', 'tl', 'fr', 'es', 'nn', 'ru', 'hi', 'ur']) {
     for (const phrase of ['Max output tokens', 'Saved recipes', 'Save recipe', 'Export recipe', 'Recipe saved.', 'Remove saved recipe?']) assert.notEqual(translate(phrase, language), phrase, language + ': ' + phrase);

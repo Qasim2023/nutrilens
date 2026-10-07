@@ -26,6 +26,7 @@ const historyRepository = createHistoryRepository({ notify: () => { historyChann
 
 const state = {
   settings: loadSettings(),
+  availableModels: null,
   image: null,          // { dataUrl, name, size, bytes, width, height }
   attachments: [],
   readingAttachments: false,
@@ -472,6 +473,7 @@ function syncDrawer() {
   $("#temperature-out").textContent = Number(s.temperature).toFixed(1);
   updateEndpointPreview();
   setValue("#set-model", s.model);
+  syncAvailableModels();
   setValue("#set-apikey", s.apiKey);
   setValue("#set-keyheader", s.keyHeader);
   setValue("#set-extra", s.extraHeaders);
@@ -504,8 +506,27 @@ function syncTransport() {
 function setValue(sel, v) { const el = $(sel); if (el) el.value = v ?? ""; }
 function setToggle(sel, on) { const el = $(sel); if (el) el.setAttribute("aria-checked", String(Boolean(on))); }
 
+function syncAvailableModels() {
+  const select = $("#available-models");
+  const model = state.settings.model;
+  // Restore the saved selection without making an automatic provider request.
+  const models = state.availableModels === null ? (model ? [model] : []) : state.availableModels;
+  select.innerHTML = '<option value="">Choose a model…</option>' + models.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('');
+  select.value = model || "";
+  select.hidden = !models.length;
+}
+
+function clearModelDiscovery() {
+  state.availableModels = [];
+  $("#available-models").innerHTML = "";
+  $("#available-models").hidden = true;
+  $("#model-options").innerHTML = "";
+  $("#models-status").textContent = "";
+  $("#test-status").textContent = "";
+}
+
 function updateModelSuggestions() {
-  const list = MODEL_SUGGESTIONS[state.settings.provider] || [];
+  const list = state.availableModels?.length ? state.availableModels : MODEL_SUGGESTIONS[state.settings.provider] || [];
   const dl = $("#model-options");
   if (dl) dl.innerHTML = list.map((m) => `<option value="${esc(m)}"></option>`).join("");
 }
@@ -541,7 +562,7 @@ function applyProviderPreset(id) {
   if (!previousModel || wasSuggested) state.settings.model = (MODEL_SUGGESTIONS[id] || [])[0] || "";
   state.settings.apiFormat = "auto";
   state.settings.demoMode = false;
-  $("#available-models").hidden = true;
+  clearModelDiscovery();
   persist();
   syncDrawer();
 }
@@ -550,6 +571,7 @@ function persist() {
   setLanguage(state.settings.language);
   if(isStaticHosting())state.settings.transport="direct";
   saveSettings(state.settings);
+  syncAvailableModels();
   syncTransport();
   applyTheme();
   updateEndpointPreview();
@@ -687,6 +709,7 @@ function wireEvents() {
   $("#reset-btn").addEventListener("click", () => {
     if (!confirm("Reset all NutriLens settings to defaults? Your saved history is kept.")) return;
     state.settings = resetSettings();
+    clearModelDiscovery();
     persist(); syncDrawer();
     recipeStudio?.refreshLanguage();
     toast("Settings reset.", "success");
@@ -706,7 +729,11 @@ function wireEvents() {
 function bindText(sel, key) {
   const el = $(sel);
   if (!el) return;
-  el.addEventListener("input", () => { state.settings[key] = el.value; persist(); });
+  el.addEventListener("input", () => {
+    state.settings[key] = el.value;
+    if (key === "baseUrl" || key === "apiKey") clearModelDiscovery();
+    persist();
+  });
 }
 function bindToggle(sel, key) {
   const el = $(sel);
@@ -748,12 +775,9 @@ async function onListModels() {
     const models = await listModels(snapshot);
     if (snapshot.baseUrl !== state.settings.baseUrl || snapshot.apiKey !== state.settings.apiKey) throw new Error("Connection settings changed. Fetch models again.");
     if (!models.length) throw new Error("The endpoint returned no models.");
-    const dl = $("#model-options");
-    dl.innerHTML = models.map((m) => `<option value="${esc(m)}"></option>`).join("");
-    const select = $("#available-models");
-    select.innerHTML = '<option value="">Choose a model…</option>' + models.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('');
-    select.hidden = false;
-    select.value = models.includes(state.settings.model) ? state.settings.model : '';
+    state.availableModels = models;
+    updateModelSuggestions();
+    syncAvailableModels();
     status.innerHTML = '<span class="status-dot ok"></span> ' + models.length + ' models loaded. Select a model above, then Test connection.';
     toast(`${models.length} models loaded.`, "success");
   } catch (err) {

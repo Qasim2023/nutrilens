@@ -10,9 +10,9 @@ import { pipeline } from "node:stream/promises";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const defaultOrigins = ["https://api.wikivibe.dev", "https://api.openai.com", "https://openrouter.ai", "https://api.groq.com", "https://api.together.xyz", "https://api.deepseek.com", "https://api.mistral.ai", "https://api.x.ai", "http://localhost:11434", "http://127.0.0.1:11434", "http://localhost:1234", "http://127.0.0.1:1234"];
 const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
-function sendJson(res, status, message) {
+function sendJson(res, status, message, code) {
   res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-  res.end(JSON.stringify({ error: { message } }));
+  res.end(JSON.stringify({ error: { message, ...(code ? {code} : {}) } }));
 }
 
 // Bind only to loopback. The relay has no key storage and never logs request bodies.
@@ -82,8 +82,14 @@ export function createAppServer({ allowedOrigins = defaultOrigins.concat(String(
         let target;
         try { target = validateEndpoint(envelope.url); }
         catch { return sendJson(res, 403, "Invalid or insecure endpoint URL."); }
-        if (!allowed.has(target.origin) || target.username || target.password || target.hash || !/\/(models|chat\/completions|responses)\/?$/.test(target.pathname)) {
-          return sendJson(res, 403, "Endpoint not allowed by the local relay. To trust another provider, add its origin to NUTRILENS_ALLOWED_ORIGINS and restart the server, or choose Direct browser requests.");
+        if (!/\/(models|chat\/completions|responses)\/?$/.test(target.pathname)) {
+          return sendJson(res, 403, "The local relay supports only models, chat/completions and responses API routes.");
+        }
+        // A custom origin is approved explicitly by the user in the same-origin
+        // app. Bind that approval to this request; never trust every endpoint.
+        if (!allowed.has(target.origin) && envelope.trustedOrigin !== target.origin) {
+          res.setHeader("X-NutriLens-Relay-Error", "origin-not-allowed");
+          return sendJson(res, 403, "This provider origin needs your approval. Retry and confirm the provider in NutriLens, or choose Direct browser requests in Settings.", "RELAY_ORIGIN_NOT_ALLOWED");
         }
         const method = envelope.method || "POST";
         if (!["GET", "POST"].includes(method) || (method === "GET" && !/\/models\/?$/.test(target.pathname)) || (method === "POST" && /\/models\/?$/.test(target.pathname))) return sendJson(res, 400, "Unsupported relay route or method.");

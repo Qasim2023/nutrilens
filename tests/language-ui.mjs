@@ -73,7 +73,7 @@ try{
   await page.screenshot({path:'artifacts/language-settings-urdu-mobile.png',fullPage:true,animations:'disabled'});
   await page.locator('#close-drawer').click();
   await page.locator('#view-analysis').click();await page.locator('#input').fill('100 g چاول');await page.locator('#send-btn').click();
-  await page.waitForFunction(()=>document.querySelector('#result .total-kcal')?.textContent==='155kcal');
+  await page.waitForFunction(()=>['155kcal','155کلو کیلوری'].includes(document.querySelector('#result .total-kcal')?.textContent));
   await page.waitForFunction(()=>!document.querySelector('#send-btn').disabled);
   assert.match(requests[2].messages[0].content,/RESPONSE LANGUAGE: Urdu \(ur\)/);
   assert.equal(await page.locator('#result h2').first().textContent(),'Protein');

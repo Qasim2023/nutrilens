@@ -250,7 +250,8 @@
       <div class="acc-body">
         <p class="desc">Analysing food or estimating calories sends your food description, attached photos and extracted recipe text to your chosen provider.</p>
         <p class="desc">Meals stay in this browser and do not sync across devices or site addresses. Download an all-meals backup before switching sites.</p>
-        <p class="desc">Browser storage is not an encrypted vault. Use encrypted backups and a personal restricted API key. Keys and custom headers are kept only for this tab session, not in persistent settings. Protect your Netlify site.</p>
+        <p class="desc">Browser storage is not an encrypted vault. Use a personal restricted API key and protect your Netlify site.</p>
+        <p class="desc">Connection settings are saved automatically and survive refreshes. Reset settings clears them.</p>
         <p class="desc">Nutrition values are estimates, not medical advice. Food illustrations are representative, not photos of your portion.</p>
       </div>
     </details>
@@ -298,6 +299,7 @@
         <option value="hosted" hidden>Hosted relay — your own provider key</option>
       </select>
       <div class="desc" style="margin-top:8px">Direct browser requests require provider CORS support. The local relay is available only on your computer.</div>
+      <div class="desc">Custom relay providers require a one-time trust confirmation. Reset settings clears remembered approvals.</div>
       <div class="desc" id="provider-hint"></div>
     </div>
 
@@ -315,7 +317,8 @@
 
     <div class="field">
       <label for="set-apikey">API key</label>
-      <div class="desc">Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key for the chosen provider.</div>
+      <div class="desc">Stored in this browser (localStorage). Requests use your key only for the chosen endpoint, directly or through your local relay.</div>
+      <div class="desc">Saved credentials are not encrypted. Use a trusted browser, or reset settings to clear them.</div>
       <div class="key-row">
         <input class="input" id="set-apikey" type="password" placeholder="sk-…" spellcheck="false" autocomplete="off">
         <button class="icon-btn" id="set-keyvisible" type="button" role="switch" aria-checked="false" aria-label="Show API key" title="Show / hide key"><span class="icon-slot"></span></button>
@@ -335,7 +338,7 @@
     <div class="field">
       <label for="set-maxtokens">Max output tokens</label>
       <div class="desc" id="set-maxtokens-hint">256–32,000 tokens. Applies to analyses and recipes; higher limits may cost more. Saved automatically.</div>
-      <input class="input" id="set-maxtokens" type="number" min="256" max="32000" step="1" value="4096" inputmode="numeric" aria-describedby="set-maxtokens-hint">
+      <input class="input" id="set-maxtokens" type="number" min="256" max="32000" step="1" value="20000" inputmode="numeric" aria-describedby="set-maxtokens-hint">
     </div>
 
     <details class="accordion" style="margin-bottom:20px">
@@ -450,8 +453,8 @@
     <h2 id="footer-privacy-title">Privacy and local storage</h2>
     <p>Analysing food or estimating calories sends your food description, attached photos and extracted recipe text to your chosen provider.</p>
     <p>Meals stay in this browser and do not sync across devices or site addresses. Download an all-meals backup before switching sites.</p>
-    <p>Browser storage is not an encrypted vault. Use encrypted backups and a personal restricted API key. Keys and custom headers are kept only for this tab session, not in persistent settings. Protect your Netlify site.</p>
-    <p>Meals are stored in this browser. API keys and custom headers stay in tab-scoped session storage. Requests use your key for the chosen provider.</p>
+    <p>Browser storage is not an encrypted vault. Use a personal restricted API key and protect your Netlify site.</p>
+    <p>Connection settings are saved automatically and survive refreshes. Reset settings clears them.</p>
     <button class="btn" type="button" data-footer-target="meal-library-toggle">Previous analyses &amp; meals</button>
   </section>
 </dialog>

@@ -294,14 +294,14 @@ export async function analyzeFood({ text, imageDataUrl, attachments = [], settin
     { role: 'user', content: imageDataUrl ? userContent(recipeText, imageDataUrl) : userContent(recipeText, null)[0].text },
   ];
   onStatus(translate(attachments.length ? 'Analysing your recipe attachments…' : imageDataUrl ? 'Analysing your photo…' : 'Analysing your description…',settings.language));
-  const answer = await complete(settings, messages, { signal, onStatus });
+  const answer = await complete(settings, messages, { signal });
   let result;
   try {
     result = normalize(validateNutrition(extractJson(answer.text)), { model: settings.model, protocol: answer.protocol, language: settings.language || "en", attachments: attachments.map(a => a.name) });
   } catch (error) {
     if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
-    onStatus(translate('Repairing the nutrition response…',settings.language));
-    const repair = await complete(settings, [...messages, { role: 'assistant', content: answer.text }, { role: 'user', content: repairPrompt(answer.text) }], { signal, onStatus });
+    // Keep the original user-facing analysis status during internal repair.
+    const repair = await complete(settings, [...messages, { role: 'assistant', content: answer.text }, { role: 'user', content: repairPrompt(answer.text) }], { signal });
     try { result = normalize(validateNutrition(extractJson(repair.text)), { model: settings.model, protocol: repair.protocol, language: settings.language || "en", attachments: attachments.map(a => a.name) }); }
     catch { throw new Error('The model did not return valid nutrition data after a repair attempt. Try another model or a more specific description.'); }
   }

@@ -33,7 +33,7 @@ test('base64 validation works on realistic photo-sized backup files',async()=>{
   const large={...backup,photo:'x'.repeat(1024*1024)};
   assert.deepEqual(await decryptBackup(await encryptBackup(large,password),password),large);
 });
-test('API keys/custom headers migrate out of localStorage and reset clears tab credentials',async()=>{
+test('API keys/custom headers persist in browser storage and reset clears credentials',async()=>{
   const oldLocal=globalThis.localStorage,oldSession=globalThis.sessionStorage;
   globalThis.localStorage=memory();globalThis.sessionStorage=memory();
   const {loadSettings,saveSettings,resetSettings,defaults}=await import('../src/store.js');
@@ -41,13 +41,14 @@ test('API keys/custom headers migrate out of localStorage and reset clears tab c
     localStorage.setItem('nutrilens.settings.v1',JSON.stringify({...defaults,apiKey:'synthetic-secret',extraHeaders:'X-Token: synthetic-extra',model:'chosen-model'}));
     const settings=loadSettings();assert.equal(settings.apiKey,'synthetic-secret');
     assert.doesNotMatch(localStorage.getItem('nutrilens.settings.v1'),/synthetic-secret|synthetic-extra|apiKey|extraHeaders/);
-    assert.equal(JSON.parse(sessionStorage.getItem('nutrilens.credentials.v1')).apiKey,'synthetic-secret');
-    saveSettings({...settings,theme:'light'});assert.equal(loadSettings().apiKey,'synthetic-secret');
-    sessionStorage.removeItem('nutrilens.credentials.v1');
+    assert.equal(JSON.parse(localStorage.getItem('nutrilens.credentials.v1')).apiKey,'synthetic-secret');assert.equal(sessionStorage.getItem('nutrilens.credentials.v1'),null);
+    saveSettings({...settings,theme:'light',baseUrl:'https://provider.example/v1',model:'chosen-model'});
+    const reloaded=loadSettings();assert.equal(reloaded.apiKey,'synthetic-secret');assert.equal(reloaded.baseUrl,'https://provider.example/v1');assert.equal(reloaded.model,'chosen-model');
+    localStorage.removeItem('nutrilens.credentials.v1');
     // A new module instance models a new tab without the in-memory fallback.
     const fresh=await import('../src/store.js?fresh-tab-security-test');assert.equal(fresh.loadSettings().apiKey,'');
     assert.equal(fresh.loadSettings().model,'chosen-model');
-    resetSettings();assert.equal(loadSettings().apiKey,'');assert.equal(sessionStorage.getItem('nutrilens.credentials.v1'),null);
+    resetSettings();const reset=loadSettings();assert.equal(reset.apiKey,'');assert.equal(reset.baseUrl,'');assert.equal(reset.model,'');assert.equal(localStorage.getItem('nutrilens.credentials.v1'),null);assert.equal(sessionStorage.getItem('nutrilens.credentials.v1'),null);
   } finally {globalThis.localStorage=oldLocal;globalThis.sessionStorage=oldSession;}
 });
 test('plaintext remote endpoints, URL credentials and unsafe headers are rejected',()=>{

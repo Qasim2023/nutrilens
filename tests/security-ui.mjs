@@ -25,8 +25,8 @@ try {
     localStorage.setItem('nutrilens.settings.v1',JSON.stringify({connectionRevision:2,apiKey:'synthetic-security-key',extraHeaders:'X-Token: synthetic-security-extra'}));
   },meal);
   await page.reload();
-  const credentials=await page.evaluate(()=>({local:localStorage.getItem('nutrilens.settings.v1'),session:sessionStorage.getItem('nutrilens.credentials.v1')}));
-  assert.doesNotMatch(credentials.local,/synthetic-security-key|synthetic-security-extra/);assert.match(credentials.session,/synthetic-security-key/);
+  const credentials=await page.evaluate(()=>({local:localStorage.getItem('nutrilens.settings.v1'),persistent:localStorage.getItem('nutrilens.credentials.v1'),session:sessionStorage.getItem('nutrilens.credentials.v1')}));
+  assert.doesNotMatch(credentials.local,/synthetic-security-key|synthetic-security-extra/);assert.match(credentials.persistent,/synthetic-security-key/);assert.equal(credentials.session,null);
   await page.locator('#meal-library-toggle').click();
   await page.waitForFunction(()=>document.querySelector('#library-diary-count').textContent==='1');
   await page.locator('#meal-library-backup-encrypted').click();await page.locator('#backup-password').waitFor();
@@ -65,7 +65,7 @@ try {
   assert.equal(await restored.evaluate(()=>sessionStorage.getItem('nutrilens.credentials.v1')),null);
   assert.equal(await restored.evaluate(()=>localStorage.getItem('nutrilens.diary.v1').includes('Synthetic private breakfast')),true);
   assert.deepEqual(await page.evaluate(()=>window.securityViolations),[]);assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
-  await page.reload();assert.match(await page.evaluate(()=>sessionStorage.getItem('nutrilens.credentials.v1')),/synthetic-security-key/);
-  await page.close();const fresh=await context.newPage();await fresh.goto(origin);assert.equal(await fresh.evaluate(()=>sessionStorage.getItem('nutrilens.credentials.v1')),null);
-  console.log('PASS: encrypted download/restore, password confirmation/cancel, wrong password and tamper rejection with no writes, repeat restore, mobile layout, no CSP violations, tab-only credentials across reload/close. Synthetic data only.');
+  await page.reload();assert.match(await page.evaluate(()=>localStorage.getItem('nutrilens.credentials.v1')),/synthetic-security-key/);
+  await page.close();const fresh=await context.newPage();await fresh.goto(origin);assert.match(await fresh.evaluate(()=>localStorage.getItem('nutrilens.credentials.v1')),/synthetic-security-key/);
+  console.log('PASS: encrypted download/restore, password confirmation/cancel, wrong password and tamper rejection with no writes, repeat restore, mobile layout, no CSP violations, browser-persistent credentials across reload/close. Synthetic data only.');
 } finally {await browser?.close();await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}

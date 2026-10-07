@@ -52,7 +52,7 @@ Verify the published address in a separate signed-out browser before entering yo
 5. If browser requests fail, use a CORS-compatible provider or design a separately authenticated backend. Do not disable browser security or expose a shared proxy key.
 6. Local HTTP providers such as a model server on your computer are not part of this HTTPS static deployment. Use the desktop app for them or a deliberately secured HTTPS setup.
 
-Your API key and custom headers are saved only in tab-scoped sessionStorage, not persistent localStorage settings. Browser session restoration can retain them; same-origin JavaScript can still access them. This is not an encrypted credential vault. Use a dedicated restricted key and set provider-side usage limits if available. Site access protection does not change that storage model. Avoid untrusted browser extensions; clear the key in Settings when finished if you do not want it retained. A backend is necessary if you want to keep the provider key out of browser storage entirely.
+Your API key and custom headers are saved in browser localStorage so they survive refreshes and browser restarts. Same-origin JavaScript can still access them; this is not an encrypted credential vault. Use a dedicated restricted key and set provider-side usage limits if available. Site access protection does not change that storage model. Avoid untrusted browser extensions; use Reset settings when finished if you do not want credentials retained. A backend is necessary if you want to keep the provider key out of browser storage entirely.
 
 ## Privacy and accuracy
 
