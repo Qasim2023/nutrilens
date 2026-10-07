@@ -217,3 +217,82 @@ export const URDU_TRANSLATIONS=Object.fromEntries(rows.trim().split('\n').map(li
   if(separator<1)throw new Error('Invalid Urdu translation row');
   return [line.slice(0,separator),line.slice(separator+1)];
 }));
+
+// Recipe Studio interface copy.
+Object.assign(URDU_TRANSLATIONS, Object.fromEntries(`
+Recipes|ترکیبیں
+Recipe Studio|ترکیبوں کا اسٹوڈیو
+Cook something nourishing|غذائیت بخش کھانا بنائیں
+Create thoughtful, balanced recipes around what you have and what you enjoy.|اپنی دستیاب اور پسندیدہ چیزوں سے متوازن ترکیبیں بنائیں۔
+Quick start|فوری آغاز
+How it works|یہ کیسے کام کرتا ہے
+Tell us what you have|بتائیں آپ کے پاس کیا ہے
+Share ingredients, cravings, or foods you’d like to avoid.|اجزاء، پسند یا وہ غذائیں بتائیں جن سے آپ پرہیز کرنا چاہتے ہیں۔
+Choose your preferences|اپنی ترجیحات منتخب کریں
+Set servings and a time limit, or start with a suggested idea.|افراد اور وقت منتخب کریں یا کوئی تجویز چنیں۔
+Explore recipe ideas|ترکیبوں کے خیالات دیکھیں
+Get detailed steps and estimated nutrition for each serving.|ہر حصے کے لیے تفصیلی طریقہ اور غذائیت کا اندازہ حاصل کریں۔
+Make it your own|اپنی پسند کے مطابق بنائیں
+What would you like to cook?|آپ کیا پکانا چاہیں گے؟
+Servings|افراد
+Ready in|تیار ہونے کا وقت
+Any time|کوئی بھی وقت
+Generate 3 recipes|تین ترکیبیں بنائیں
+Generating…|ترکیبیں بن رہی ہیں…
+Cancel|منسوخ کریں
+Suggested ideas|تجویز کردہ خیالات
+Tap an idea to add it to your request.|خیال کو اپنی درخواست میں شامل کرنے کے لیے منتخب کریں۔
+High-protein lunch bowl|زیادہ پروٹین والا دوپہر کا پیالہ
+Plant-forward tray bake|سبزیوں سے بھرپور بیک
+High-fibre breakfast|فائبر سے بھرپور ناشتہ
+Budget-friendly pantry dinner|کم خرچ ذخیرہ شدہ اشیا کا کھانا
+Lighter comfort-food pasta|ہلکا اور آرام دہ پاستا
+Your recipe ideas|آپ کی ترکیبیں
+Detailed instructions with nutrition estimates per serving.|ہر حصے کے لیے تخمینی غذائیت کے ساتھ تفصیلی ہدایات۔
+Estimated nutrition per serving|فی حصے کی تخمینی غذائیت
+Approximate values|تقریبی اقدار
+Ingredients|اجزاء
+Steps|طریقہ
+Chef’s tip|باورچی کا مشورہ
+Possible swaps|ممکنہ متبادل
+Protein|پروٹین
+Carbs|کاربوہائیڈریٹس
+Fat|چکنائی
+Fiber|فائبر
+Easy|آسان
+Moderate|درمیانہ
+Advanced|مشکل
+Connect a model in Settings to create recipes.|ترکیبیں بنانے کے لیے ترتیبات میں ماڈل منسلک کریں۔
+Open Settings|ترتیبات کھولیں
+Creating recipe ideas…|ترکیبیں تیار کی جا رہی ہیں…
+Polishing the recipe details…|ترکیب کی تفصیلات بہتر کی جا رہی ہیں…
+Could not generate recipes.|ترکیبیں نہیں بن سکیں۔
+Tell us what you would like to cook first.|پہلے بتائیں آپ کیا پکانا چاہتے ہیں۔
+Generation cancelled.|تیاری منسوخ کر دی گئی۔
+Nutrition is estimated, not medical advice. Allergy safety and cross-contact cannot be guaranteed; check ingredient labels and preparation.|غذائیت کا اندازہ طبی مشورہ نہیں۔ الرجی کی حفاظت یا کراس کانٹیکٹ نہ ہونے کی ضمانت نہیں؛ لیبل اور تیاری ضرور دیکھیں۔
+Uses the model selected in Settings. Your recipes are not saved.|ترتیبات میں منتخب ماڈل استعمال ہوگا۔ ترکیبیں محفوظ نہیں کی جائیں گی۔
+Your kitchen, your way|آپ کا باورچی خانہ، آپ کا انداز
+Ready when you are|جب آپ تیار ہوں
+Add ingredients and any dietary preferences, then choose Generate 3 recipes. Detailed ideas will appear here.|اجزاء اور غذائی ترجیحات شامل کریں، پھر تین ترکیبیں بنائیں منتخب کریں۔ تفصیلی تجاویز یہاں آئیں گی۔
+`.trim().split('\n').map(line => {
+  const separator = line.indexOf('|');
+  return [line.slice(0, separator), line.slice(separator + 1)];
+})));Object.assign(URDU_TRANSLATIONS, {
+  "Dismiss quick start": "فوری آغاز بند کریں",
+  "e.g. Use chickpeas, spinach and lemon. Vegetarian, high in fibre, and ready in about 25 minutes.": "مثلاً چنے، پالک اور لیموں استعمال کریں۔ سبزیوں پر مشتمل، فائبر سے بھرپور، اور تقریباً 25 منٹ میں تیار۔",
+});
+Object.assign(URDU_TRANSLATIONS, { 'recipes ready.': 'ترکیبیں تیار ہیں۔' });
+Object.assign(URDU_TRANSLATIONS, {
+  "Ingredients, preferences, or a craving—all are a great place to start.": "اجزاء، غذائی ترجیحات یا پسندیدہ ذائقے سے آغاز کریں۔",
+  "Include ingredients you have, dietary preferences, or foods to avoid.": "اپنے دستیاب اجزاء، غذائی ترجیحات یا پرہیز کی غذائیں لکھیں۔",
+  "min": "منٹ",
+  "servings": "افراد",
+  "Bright, filling and balanced": "تازہ، پیٹ بھرنے والا اور متوازن",
+  "Colorful, veggie-packed dinner": "رنگ برنگی سبزیوں سے بھرپور رات کا کھانا",
+  "Oats, fruit and staying power": "جئی، پھل اور دیرپا توانائی",
+  "Simple staples, plenty of flavor": "سادہ بنیادی اجزاء، بھرپور ذائقہ",
+  "Cozy, weeknight-friendly": "آرام دہ اور ہفتے کے دنوں کے لیے آسان",
+  "kcal": "کلو کیلوری",
+});Object.assign(URDU_TRANSLATIONS, {
+  "A generated recipe included a food you asked to avoid. No recipes were shown. Please clarify your request and try again.": "درخواست کی گئی ایک غذائی چیز ترکیب میں شامل تھی۔ کوئی ترکیب نہیں دکھائی گئی۔ اپنی درخواست واضح کرکے دوبارہ کوشش کریں۔",
+});

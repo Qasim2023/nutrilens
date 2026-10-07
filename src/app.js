@@ -13,9 +13,10 @@ import { readAttachment, fitsAttachmentBudget, MAX_ATTACHMENTS } from "./attachm
 import { shouldAnalyzeOnEnter } from "./keyboard.js";
 import { initFooter } from "./footer.js";
 import { initDiary } from "./diary.js";
+import { initRecipeStudio } from './recipes.js';
 import { createHistoryRepository } from "./history-store.js";
 import { initMealLibrary, diaryRequestText } from "./meal-library.js";
-let diary, mealLibrary;
+let diary, mealLibrary, recipeStudio;
 let historyChannel;
 const historyRepository = createHistoryRepository({ notify: () => { historyChannel?.postMessage('changed'); mealLibrary?.refresh(); } });
 
@@ -648,7 +649,7 @@ function wireEvents() {
 
   $("#set-language").addEventListener("change", event => {
     state.settings.language=event.target.value;persist();
-    diary?.refreshLanguage();mealLibrary?.refresh();
+    diary?.refreshLanguage();mealLibrary?.refresh();recipeStudio?.refreshLanguage();
   });
   // Settings fields
   $("#set-provider").addEventListener("change", (e) => applyProviderPreset(e.target.value));
@@ -690,6 +691,7 @@ function wireEvents() {
     if (!confirm("Reset all NutriLens settings to defaults? Your saved history is kept.")) return;
     state.settings = resetSettings();
     persist(); syncDrawer();
+    recipeStudio?.refreshLanguage();
     toast("Settings reset.", "success");
   });
   // Examples
@@ -808,6 +810,7 @@ function boot() {
   diary = initDiary({ toast, getSettings: currentSettings, isAnalysisBusy:()=>state.busy || state.readingAttachments });
   mealLibrary = initMealLibrary({history:historyRepository,onOpenAnalysis:displaySavedAnalysis,onChooseDiary:selectDiaryMeal,onReanalyse:prepareSavedAnalysis,onBeforeOpen:()=>{if($("#drawer").classList.contains('open'))closeDrawer();diary.showAnalysis();},onAllDeleted:source=>{if(source==='history'){state.lastSavedEntry=null;state.viewingSaved=false;$("#saved-analysis-banner").hidden=true;$("#history-save-status").hidden=true;}else{state.diaryContext=null;renderAnalysisOrigin();}},isBusy:()=>state.busy || state.readingAttachments || diary.isBusy(),toast});
   if(typeof BroadcastChannel !== 'undefined'){historyChannel=new BroadcastChannel('nutrilens-history');historyChannel.onmessage=()=>mealLibrary.refresh();}
+  recipeStudio = initRecipeStudio({ getSettings: currentSettings, isProviderReady: hasRemoteModel, openSettings: openDrawer });
   wireEvents();
   initFooter();
 

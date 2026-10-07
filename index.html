@@ -40,6 +40,7 @@
   <nav class="view-nav" aria-label="App sections">
     <button class="view-button" type="button" id="view-analysis" aria-pressed="true" aria-controls="analysis-view">Analyse food</button>
     <button class="view-button" type="button" id="view-diary" aria-pressed="false" aria-controls="diary-panel"><span class="icon-slot" id="diary-nav-icon"></span> Daily food diary <span class="diary-nav-total" id="diary-today-total">0 kcal today</span></button>
+    <button class="view-button" type="button" id="view-recipes" aria-pressed="false" aria-controls="recipes-panel"><span class="icon-slot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4.4-2.8-7-6.6-7-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 7 3.6C19 14.4 16.4 18.2 12 21Z"/><path d="M12 7c-.2-2.1.8-3.6 2.8-4"/></svg></span> Recipes</button>
   </nav>
   <div id="analysis-view">
   <div class="analysis-library-toolbar"><button class="btn btn-sm" type="button" id="meal-library-toggle" aria-expanded="false" aria-controls="meal-library"><span class="icon-slot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span> Previous analyses &amp; meals</button><button class="btn btn-ghost btn-sm" type="button" id="choose-diary-meal">Choose a diary meal</button><span class="library-toolbar-note">Revisit saved results or analyse a logged food</span></div>
@@ -47,7 +48,7 @@
     <h1>Know exactly what's <span class="grad">on your plate</span></h1>
     <p>Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.</p>
     <div class="hero-chips">
-      <span class="chip"><span class="icon-slot"></span> Photo or text</span>      <span class="chip"><span class="icon-slot"></span> Macros &amp; micros</span>
+      <span class="chip"><span class="icon-slot"></span> Photo or text</span>      <span class="chip"><span class="icon-slot"></span> Macros &amp; micros</span>
       <span class="chip"><span class="icon-slot"></span> Export &amp; print</span>
     </div>
   </section>
@@ -130,6 +131,61 @@
     </div>
   </section>
 
+  <section id="recipes-panel" aria-labelledby="recipes-heading" hidden>
+    <header class="recipe-heading">
+      <div class="recipe-heading-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4.4-2.8-7-6.6-7-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 7 3.6C19 14.4 16.4 18.2 12 21Z"/><path d="M12 7c-.2-2.1.8-3.6 2.8-4M12 10c-1.5 1.7-2.3 3.5-2.6 5.5"/></svg></div>
+      <div><span class="diary-eyebrow">Recipe Studio</span><h1 id="recipes-heading">Cook something nourishing</h1><p>Create thoughtful, balanced recipes around what you have and what you enjoy.</p></div>
+    </header>
+
+    <aside class="recipe-guide" id="recipe-guide" aria-labelledby="recipe-guide-title" hidden>
+      <div class="recipe-guide-head"><div><span class="recipe-guide-kicker">Quick start</span><h2 id="recipe-guide-title">How it works</h2></div><button class="icon-btn" id="recipe-guide-dismiss" type="button" aria-label="Dismiss quick start" title="Dismiss quick start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <ol class="recipe-guide-steps">
+        <li><span class="recipe-step-number">1</span><div><strong>Tell us what you have</strong><p>Share ingredients, cravings, or foods you’d like to avoid.</p></div></li>
+        <li><span class="recipe-step-number">2</span><div><strong>Choose your preferences</strong><p>Set servings and a time limit, or start with a suggested idea.</p></div></li>
+        <li><span class="recipe-step-number">3</span><div><strong>Explore recipe ideas</strong><p>Get detailed steps and estimated nutrition for each serving.</p></div></li>
+      </ol>
+      <p class="recipe-guide-note">Nutrition is estimated, not medical advice. Allergy safety and cross-contact cannot be guaranteed; check ingredient labels and preparation.</p>
+    </aside>
+
+    <div class="recipe-layout">
+      <div class="recipe-builder-column">
+        <form class="card recipe-form" id="recipe-form">
+          <div class="recipe-card-heading"><span class="recipe-icon-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M7 4v6m10-6v6M5 11h14l-1 9H6l-1-9Z"/><path d="M9 15h6"/></svg></span><div><h2>Make it your own</h2><p>Ingredients, preferences, or a craving—all are a great place to start.</p></div></div>
+          <div class="field recipe-request-field"><label for="recipe-instructions">What would you like to cook?</label><textarea class="textarea" id="recipe-instructions" rows="4" maxlength="1600" required placeholder="e.g. Use chickpeas, spinach and lemon. Vegetarian, high in fibre, and ready in about 25 minutes."></textarea><p class="recipe-field-hint">Include ingredients you have, dietary preferences, or foods to avoid.</p></div>
+          <div class="recipe-preference-row">
+            <div class="field"><label for="recipe-servings">Servings</label><select class="select" id="recipe-servings"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option></select></div>
+            <div class="field"><label for="recipe-time">Ready in</label><select class="select" id="recipe-time"><option value="0">Any time</option><option value="15">15 min</option><option value="20">20 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
+          </div>
+          <button class="btn btn-primary recipe-generate" id="recipe-generate" type="submit"><span class="recipe-sparkle" aria-hidden="true">✦</span><span id="recipe-generate-label">Generate 3 recipes</span></button>
+          <p class="recipe-provider-note">Uses the model selected in Settings. Your recipes are not saved.</p>
+        </form>
+
+        <section class="card recipe-ideas" aria-labelledby="recipe-ideas-title">
+          <div class="recipe-section-heading"><div><h2 id="recipe-ideas-title">Suggested ideas</h2><p>Tap an idea to add it to your request.</p></div><span class="recipe-ideas-mark" aria-hidden="true">✦</span></div>
+          <div class="recipe-idea-list">
+            <button class="recipe-idea" type="button" data-recipe-idea="Create a balanced high-protein lunch bowl with a whole grain, plenty of colorful vegetables, and a bright dressing. Keep it practical and filling."><span class="recipe-idea-icon" aria-hidden="true">◒</span><span><strong>High-protein lunch bowl</strong><small>Bright, filling and balanced</small></span><span class="recipe-idea-arrow" aria-hidden="true">↗</span></button>
+            <button class="recipe-idea" type="button" data-recipe-idea="Make a plant-forward one-pan tray bake with seasonal vegetables, beans or tofu, herbs, and a simple whole-food side."><span class="recipe-idea-icon" aria-hidden="true">✿</span><span><strong>Plant-forward tray bake</strong><small>Colorful, veggie-packed dinner</small></span><span class="recipe-idea-arrow" aria-hidden="true">↗</span></button>
+            <button class="recipe-idea" type="button" data-recipe-idea="Create a high-fibre breakfast using oats or another whole grain, fruit, seeds, and a satisfying source of protein. Keep added sugar modest."><span class="recipe-idea-icon" aria-hidden="true">◉</span><span><strong>High-fibre breakfast</strong><small>Oats, fruit and staying power</small></span><span class="recipe-idea-arrow" aria-hidden="true">↗</span></button>
+            <button class="recipe-idea" type="button" data-recipe-idea="Create an affordable, nourishing pantry dinner from simple shelf-stable ingredients such as beans, lentils, canned tomatoes, and whole grains."><span class="recipe-idea-icon" aria-hidden="true">⌂</span><span><strong>Budget-friendly pantry dinner</strong><small>Simple staples, plenty of flavor</small></span><span class="recipe-idea-arrow" aria-hidden="true">↗</span></button>
+            <button class="recipe-idea" type="button" data-recipe-idea="Make a cozy, lighter comfort-food pasta with vegetables, a sensible portion, a satisfying protein, and a flavorful sauce that is not too heavy."><span class="recipe-idea-icon" aria-hidden="true">〰</span><span><strong>Lighter comfort-food pasta</strong><small>Cozy, weeknight-friendly</small></span><span class="recipe-idea-arrow" aria-hidden="true">↗</span></button>
+          </div>
+        </section>
+      </div>
+
+      <section class="card recipe-output" aria-labelledby="recipe-output-title">
+        <div class="recipe-output-heading"><div><span class="recipe-output-eyebrow">Your kitchen, your way</span><h2 id="recipe-output-title">Your recipe ideas</h2><p>Detailed instructions with nutrition estimates per serving.</p></div><span class="recipe-output-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M8 7h8M8 11h8"/></svg></span></div>
+        <div class="recipe-setup-note" id="recipe-setup-note" role="alert" hidden><p>Connect a model in Settings to create recipes.</p><button class="btn btn-sm" id="recipe-settings-button" type="button">Open Settings</button></div>
+        <div class="recipe-generation-status" id="recipe-status" role="status" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><span id="recipe-status-text">Creating recipe ideas…</span><button class="btn btn-sm btn-ghost" id="recipe-cancel" type="button">Cancel</button></div>
+        <div class="recipe-error" id="recipe-error" role="alert" hidden></div>
+        <p class="sr-only" id="recipe-announcement" role="status" aria-live="polite"></p>
+        <div class="recipe-results" id="recipe-results" role="region" aria-label="Recipe results">
+          <div class="recipe-empty" id="recipe-empty"><span class="recipe-empty-mark" aria-hidden="true">✦</span><h3>Ready when you are</h3><p>Add ingredients and any dietary preferences, then choose Generate 3 recipes. Detailed ideas will appear here.</p></div>
+          <div class="recipe-results-list" id="recipe-results-list"></div>
+        </div>
+        <p class="recipe-nutrition-disclaimer">Nutrition is estimated, not medical advice. Allergy safety and cross-contact cannot be guaranteed; check ingredient labels and preparation.</p>
+      </section>
+    </div>
+  </section>
   <footer class="site-footer" aria-label="Website footer">
     <div class="footer-main">
       <div class="footer-brand">

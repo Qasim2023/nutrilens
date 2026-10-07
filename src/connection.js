@@ -104,6 +104,11 @@ export async function requestJson(settings, url, { method = "POST", body, signal
     validateHeader('Authorization', 'Bearer ' + key);
     hostedRequest = {method:'POST', headers:{'Content-Type':'application/json','X-NutriLens-Relay':'hosted-v1','Authorization':'Bearer '+key},body:JSON.stringify({path,method,body}),signal:combined,redirect:'error',credentials:'same-origin',referrerPolicy:'no-referrer',cache:'no-store'};
   }
+  if (!hostedRequest && ["bearer", "api-key", "header"].includes(settings.auth) && !String(settings.apiKey || "").trim()) {
+    const error = new Error("This endpoint requires an API key. Enter it in Settings, not in chat.");
+    error.code = "API_KEY_MISSING";
+    throw error;
+  }
   let res;
   try {
     res = await fetch(hostedRequest ? HOSTED_RELAY_PATH : useRelay ? "/api/relay" : url, hostedRequest || (useRelay ? {

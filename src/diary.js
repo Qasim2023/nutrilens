@@ -50,11 +50,15 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
   const caloriesLabel=n=>fmt(n,1);
 
   function setView(next) {
+    if(!['analysis','diary','recipes'].includes(next))return;
     view=next;
-    $('#analysis-view').hidden=next!=='analysis';
-    $('#diary-panel').hidden=next!=='diary';
-    for (const name of ['analysis','diary']) $('#view-'+name).setAttribute('aria-pressed',String(next===name));
+    const panels={analysis:'#analysis-view',diary:'#diary-panel',recipes:'#recipes-panel'};
+    for(const [name,selector] of Object.entries(panels)) {
+      $(selector).hidden=next!==name;
+      $('#view-'+name).setAttribute('aria-pressed',String(next===name));
+    }
     if(next==='diary') render();
+    if(next==='recipes') document.dispatchEvent(new Event('nutrilens:recipes-open'));
   }
   function resetForm() {
     if(pending)return;
@@ -222,6 +226,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
   });
   $('#view-analysis').addEventListener('click',()=>setView('analysis'));
   $('#view-diary').addEventListener('click',()=>setView('diary'));
+  $('#view-recipes').addEventListener('click',()=>setView('recipes'));
   $('#diary-analyse-food').addEventListener('click',()=>{setView('analysis');$('#input').focus();});
   function reload() {
     try {
@@ -252,6 +257,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
       setView('diary');return openNutrition(id);
     },
     showAnalysis:()=>setView('analysis'),
+    showRecipes:()=>setView('recipes'),
     prepareResult(result, {thumb = null} = {}) {
       if(pending){toast('Finish or cancel the current calorie estimate first.');return;}
       if(!result)return;

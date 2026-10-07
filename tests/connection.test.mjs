@@ -213,3 +213,24 @@ test('retired settings and credentials are removed on load without resetting act
     assert.equal(storage.get('nutrilens.diary.v1'),'preserve-diary');
   } finally {globalThis.localStorage=original;}
 });
+
+
+test('model discovery blocks missing API keys before contacting a provider or local relay', async t => {
+  let calls = 0;
+  await fakeFetch(t, async () => { calls++; throw new Error('Unexpected request'); }, async () => {
+    for (const auth of ['bearer', 'api-key', 'header']) {
+      for (const transport of ['direct', 'relay']) {
+        await assert.rejects(listModels({ ...settings, auth, transport, apiKey: '  ' }), error => error.code === 'API_KEY_MISSING' && /Enter it in Settings/.test(error.message));
+      }
+    }
+    await assert.rejects(listModels({ ...settings, baseUrl: '', apiKey: '' }), /Enter an HTTP/);
+    assert.equal(calls, 0);
+  });
+});
+
+test('local and public model discovery still supports explicit no-auth mode', async t => {
+  await fakeFetch(t, async (_url, init) => {
+    assert.equal(init.headers.Authorization, undefined);
+    return jsonResponse({ data: [{ id: 'public-local-model' }] });
+  }, async () => assert.deepEqual(await listModels({ ...settings, apiKey: '', auth: 'none' }), ['public-local-model']));
+});
