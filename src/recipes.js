@@ -1,8 +1,10 @@
+import {withoutSentencePeriods} from "./interface-text.js";
 /* ======================================================================
    NutriLens — Recipe Studio UI
    Generated ideas stay in memory until explicitly saved to this browser.
    ====================================================================== */
 
+import {demoRecipe, waitForDemo} from "./demo-experience.js";
 import { generateRecipes } from "./recipe-ai.js";
 import { esc, fmt } from "./render.js";
 import { translate } from "./i18n.js";
@@ -13,7 +15,7 @@ import { confirmDelete } from "./delete-confirmation.js";
 const $ = (selector, root = document) => root.querySelector(selector);
 const GUIDE_KEY = "nutrilens.recipesGuideDismissed.v1";
 
-export function initRecipeStudio({ getSettings, isProviderReady, openSettings, confirmRemoval = confirmDelete }) {
+export function initRecipeStudio({ getSettings, isProviderReady, openSettings, confirmRemoval = confirmDelete, beginDemoUse = () => null, getDemoRecipeIndex = () => 0 }) {
   const form = $("#recipe-form");
   const request = $("#recipe-instructions");
   const servings = $("#recipe-servings");
@@ -42,11 +44,12 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
   let controller = null;
   let busy = false;
   let recipes = null;
+  let generatedDemo = false;
   let guideDismissedThisSession = false;
 
   const lang = () => getSettings()?.language || "en";
   const tr = phrase => translate(phrase, lang());
-  const escAI = value => `<span data-i18n-skip>${esc(value)}</span>`;
+  const escAI = value => `<span data-i18n-skip>${esc(withoutSentencePeriods(value))}</span>`;
 
   function guideWasDismissed() {
     if (guideDismissedThisSession) return true;
@@ -65,7 +68,7 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
     const tags = recipe.tags.length
       ? `<div class="recipe-tags">${recipe.tags.map(tag => `<span class="recipe-tag" data-i18n-skip>${esc(tag)}</span>`).join("")}</div>`
       : "";
-    const ingredients = recipe.ingredients.map(ingredient => `<li>${ingredient.amount ? `<span class="recipe-ingredient-amount" data-i18n-skip>${esc(ingredient.amount)}</span> ` : ""}<span data-i18n-skip>${esc(ingredient.name)}</span></li>`).join("");    const steps = recipe.steps.map(step => `<li><span data-i18n-skip>${esc(step)}</span></li>`).join("");
+    const ingredients = recipe.ingredients.map(ingredient => `<li>${ingredient.amount ? `<span class="recipe-ingredient-amount" data-i18n-skip>${esc(ingredient.amount)}</span> ` : ""}<span data-i18n-skip>${esc(ingredient.name)}</span></li>`).join("");    const steps = recipe.steps.map(step => `<li><span data-i18n-skip>${esc(withoutSentencePeriods(step))}</span></li>`).join("");
     const swaps = recipe.swaps.length
       ? `<div class="recipe-swaps"><strong>${tr("Possible swaps")}:</strong> ${recipe.swaps.map(escAI).join(" · ")}</div>`
       : "";
@@ -90,7 +93,7 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
         <section><h4 class="recipe-detail-heading"><span aria-hidden="true">↗</span>${tr("Steps")}</h4><ol class="recipe-steps">${steps}</ol></section>
       </div>
       ${tip}${swaps}
-      <div class="recipe-card-actions">
+      <div class="recipe-card-actions" ${!showingSaved && generatedDemo ? "hidden" : ""}>
         ${showingSaved
           ? `<button class="btn btn-ghost btn-sm btn-danger" type="button" data-recipe-action="remove" data-recipe-index="${index}">${tr("Remove recipe")}</button>`
           : `<button class="btn btn-sm" type="button" data-recipe-action="save" data-recipe-index="${index}" ${isSaved ? "disabled" : ""}>${tr(isSaved ? "Saved" : "Save recipe")}</button>`}
@@ -111,7 +114,8 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
     savedCount.textContent = String(savedRecipes.length);
     generatedView.setAttribute("aria-pressed", String(!showingSaved));
     savedView.setAttribute("aria-pressed", String(showingSaved));
-    exportAll.disabled = !visible.length;
+    exportAll.disabled = !visible.length || !showingSaved && generatedDemo;
+    $("#recipe-demo-note").hidden = !generatedDemo || showingSaved || !visible.length;
     resultsList.innerHTML = visible.map(renderRecipe).join("");
   }
 
@@ -147,6 +151,7 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
   }
 
   async function recipeAction(event) {
+    if (!showingSaved && generatedDemo) return;
     const button = event.target.closest("[data-recipe-action]");
     if (!button) return;
     const index = Number(button.dataset.recipeIndex);
@@ -182,7 +187,8 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
 
   function updateButton() {
     generateButton.disabled = busy;
-    generateLabel.textContent = tr(busy ? "Generating…" : "Generate 3 recipes");
+    generateLabel.textContent = tr(busy ? getSettings().demoMode ? "Loading sample…" : "Generating…" : getSettings().demoMode ? "Show sample recipe" : "Generate 3 recipes");
+    $("#recipe-provider-note").textContent = tr(getSettings().demoMode ? "Fixed sample recipes — End demo to create recipes with your own provider" : "Uses the model selected in Settings. Save recipes to keep them in this browser.");
     generateButton.setAttribute("aria-busy", String(busy));
     cancelButton.hidden = !busy;
   }
@@ -196,7 +202,11 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
       request.focus();
       return;
     }
-    if (!isProviderReady()) {
+    const useDemo = Boolean(getSettings().demoMode);
+    const demoTicket = useDemo ? beginDemoUse("recipes") : null;
+    if (useDemo && !demoTicket) return;
+    let demoSucceeded = false;
+    if (!useDemo && !isProviderReady()) {
       setupNote.hidden = false;
       return;
     }
@@ -206,12 +216,14 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
     showingSaved = false;
     renderResults();
     status.hidden = false;
-    statusText.textContent = tr("Creating recipe ideas…");
+    statusText.textContent = tr(useDemo ? "Loading a sample recipe…" : "Creating recipe ideas…");
     controller = new AbortController();
     busy = true;
     updateButton();
     try {
-      const result = await generateRecipes({
+      let result;
+      if (useDemo) { await waitForDemo(controller.signal); result = demoRecipe(getDemoRecipeIndex()); }
+      else result = await generateRecipes({
         instructions: request.value,
         servings: Number(servings.value),
         maxMinutes: Number(time.value),
@@ -219,11 +231,13 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
         onStatus: message => { statusText.textContent = message; },
         signal: controller.signal,
       });
+      generatedDemo = useDemo;
       recipes = result;
       showingSaved = false;
       renderResults();
-      announcement.textContent = `${result.length} ${tr("recipes ready.")}`;
+      announcement.textContent = useDemo ? tr("Sample recipe ready") : `${result.length} ${tr("recipes ready.")}`;
       status.hidden = true;
+      demoSucceeded = useDemo;
     } catch (error) {
       if (error?.name === "AbortError") {
         statusText.textContent = tr("Generation cancelled.");
@@ -245,6 +259,8 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
       busy = false;
       controller = null;
       updateButton();
+      if (demoSucceeded) demoTicket?.complete();
+      else demoTicket?.release();
     }
   }
 
@@ -277,6 +293,8 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
   renderResults();
   updateButton();
   return {
+    cancel: () => controller?.abort(),
+    refreshMode() { if (getSettings().demoMode) setupNote.hidden = true; updateButton(); },
     refreshLanguage() {
       renderResults();
       if (!busy) updateButton();

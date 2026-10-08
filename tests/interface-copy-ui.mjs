@@ -10,6 +10,8 @@ try{
   browser=await chromium.launch({headless:true,...(process.argv[3]?{executablePath:process.argv[3]}:{})});
   const page=await browser.newPage({viewport:{width:1360,height:1000}}),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(`http://127.0.0.1:${app.address().port}`);
+  // This regression exercises the normal app, not first-visit onboarding
+  if (await page.locator('#onboarding-welcome').evaluate(el=>el.open)) await page.locator('#welcome-returning').click();
   await page.evaluate(async()=>{
     const {saveSettings,loadSettings}=await import('/src/store.js');
     saveSettings({...loadSettings(),provider:'custom',baseUrl:'https://example.test/v1',model:'fixture',auth:'none',apiKey:'keep-private-key',demoMode:false,language:'en'});

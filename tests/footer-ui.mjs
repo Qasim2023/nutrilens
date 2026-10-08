@@ -12,6 +12,8 @@ try {
   const page = await browser.newPage({viewport: {width: 1360, height: 1000}});
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('http://127.0.0.1:' + app.address().port);
+  // This regression exercises the normal app, not first-visit onboarding
+  if (await page.locator('#onboarding-welcome').evaluate(el=>el.open)) await page.locator('#welcome-returning').click();
   const footer = page.locator('.site-footer');
   await footer.waitFor();
   assert.equal(await page.locator('#footer-year').textContent(), String(new Date().getFullYear()));

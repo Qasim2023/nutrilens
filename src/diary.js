@@ -1,3 +1,6 @@
+import {withoutSentencePeriods} from "./interface-text.js";
+import {demoAnalyze} from "./demo.js";
+import {demoDiaryInput, demoDiaryStorage, waitForDemo} from "./demo-experience.js";
 import {foodPicture} from './food-picture.js';
 import {confirmDelete} from './delete-confirmation.js';
 import { getLocale, translate } from "./i18n.js";
@@ -30,22 +33,25 @@ export function renderDiaryConfidence(entry) {
 
 export function renderDiaryNutrition(entry, detail={}) {
   const analysis=entry.analysis || detail.analysis;
-  if(analysis) return `<p class="diary-nutrition-note">${detail.saveFailed ? 'This analysis is not saved yet.' : 'Saved with this diary entry. Reopen it without analysing again.'}</p>
+  if(analysis) return `<p class="diary-nutrition-note">${analysis.meta?.demo ? 'Sample nutrition for the demo diary — not a record of food you ate' : detail.saveFailed ? 'This analysis is not saved yet.' : 'Saved with this diary entry. Reopen it without analysing again.'}</p>
     ${detail.saveFailed ? '<button class="btn btn-sm" type="button" data-save-diary-nutrition="'+esc(entry.id)+'">Retry saving</button>' : ''}
-    ${renderResult(analysis,{imageUrl:diaryThumbnail(entry.thumb),model:analysis.meta?.model,showMicros:true,showItems:true,showSwaps:true,showActions:false})}`;
+    ${renderResult(analysis,{imageUrl:diaryThumbnail(entry.thumb),model:analysis.meta?.model,showMicros:true,showItems:true,showSwaps:true,showActions:false,isEstimate:Boolean(analysis.meta?.demo)})}`;
   if(detail.loading) return `<div class="diary-nutrition-status" role="status"><span class="spinner" aria-hidden="true"></span><span data-nutrition-status>${esc(detail.status || 'Analysing detailed nutrition…')}</span><button class="btn btn-sm" type="button" data-cancel-diary-nutrition>Cancel</button></div>`;
-  if(detail.error) return `<div class="diary-warning" role="alert"><strong>Analysis failed</strong><p data-i18n-skip>${esc(translate(detail.error))}</p><button class="btn btn-sm" type="button" data-retry-diary-nutrition="${esc(entry.id)}">Retry</button></div>`;
+  if(detail.error) return `<div class="diary-warning" role="alert"><strong>Analysis failed</strong><p data-i18n-skip>${esc(withoutSentencePeriods(translate(detail.error)))}</p><button class="btn btn-sm" type="button" data-retry-diary-nutrition="${esc(entry.id)}">Retry</button></div>`;
   return '';
 }
 
-export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
+export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false, beginDemoUse=()=>null }) {
   const $ = selector=>document.querySelector(selector);
   let entries=[], selected=localDay(), editing=null, draft=null, blocked=false, view='analysis', pending=null;
   let expandedId=null, nutritionPending=null;
   const nutritionStates=new Map();
+  let demoView=Boolean(getSettings().demoMode);
+  const readEntries=()=>loadDiary(demoView ? demoDiaryStorage() : localStorage);
+  const writeEntries=next=>saveDiary(next,demoView ? demoDiaryStorage() : localStorage);
   const form=$('#diary-form');
   const message=$('#diary-message');
-  try { entries=loadDiary(); } catch(error) { blocked=true; message.textContent=error.message; message.hidden=false; }
+  try { entries=readEntries(); } catch(error) { blocked=true; message.textContent=error.message; message.hidden=false; }
   const todayBadge=$('#diary-today-total');
   const caloriesLabel=n=>fmt(n,1);
 
@@ -88,7 +94,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
     const items=dayEntries(entries,selected);
     $('#diary-entries').innerHTML=items.length ? items.map(entry=>`<article class="diary-entry" data-diary-entry="${esc(entry.id)}">
       ${renderDiaryThumbnail(entry, entry.analysis || nutritionStates.get(entry.id)?.analysis)}
-      <div class="diary-entry-description"><strong data-i18n-skip>${esc(entry.name)}</strong><small>${esc(MEALS.find(([key])=>key===entry.meal)[1])} · ${entry.source==='ai'?'Estimated nutrition':'Manual entry'}</small>${entry.nutrients ? `<small>Protein ${fmt(entry.nutrients.protein_g,1)} g · Carbs ${fmt(entry.nutrients.carbs_g,1)} g · Fat ${fmt(entry.nutrients.fat_g,1)} g · Fibre ${fmt(entry.nutrients.fiber_g,1)} g · Sugar ${fmt(entry.nutrients.sugar_g,1)} g · Sodium ${fmt(entry.nutrients.sodium_mg)} mg</small>` : ""}${cleanEstimateNotes(entry.estimateNotes) ? `<details class="diary-estimate-details"><summary>Estimated portion</summary><p data-i18n-skip>${esc(cleanEstimateNotes(entry.estimateNotes))}</p></details>` : ''}</div>
+      <div class="diary-entry-description"><strong data-i18n-skip>${esc(entry.name)}</strong><small>${esc(MEALS.find(([key])=>key===entry.meal)[1])} · ${entry.source==='ai'?'Estimated nutrition':'Manual entry'}</small>${entry.nutrients ? `<small>Protein ${fmt(entry.nutrients.protein_g,1)} g · Carbs ${fmt(entry.nutrients.carbs_g,1)} g · Fat ${fmt(entry.nutrients.fat_g,1)} g · Fibre ${fmt(entry.nutrients.fiber_g,1)} g · Sugar ${fmt(entry.nutrients.sugar_g,1)} g · Sodium ${fmt(entry.nutrients.sodium_mg)} mg</small>` : ""}${cleanEstimateNotes(entry.estimateNotes) ? `<details class="diary-estimate-details"><summary>Estimated portion</summary><p data-i18n-skip>${esc(withoutSentencePeriods(cleanEstimateNotes(entry.estimateNotes)))}</p></details>` : ''}</div>
       <div class="diary-entry-calories">${caloriesLabel(entry.calories)}<small> kcal</small>${renderDiaryConfidence(entry)}</div>
       <div class="diary-entry-actions"><button class="btn btn-sm diary-detail-button" type="button" data-analyse-diary="${esc(entry.id)}" aria-label="Detailed nutrition for ${esc(entry.name)}" aria-expanded="${expandedId===entry.id}" aria-controls="diary-nutrition-${esc(entry.id)}">Detailed nutrition</button><button class="icon-btn" type="button" data-edit-entry="${esc(entry.id)}" aria-label="Edit ${esc(entry.name)}" title="Edit entry">${ICONS.edit}</button><button class="icon-btn" type="button" data-remove-entry="${esc(entry.id)}" aria-label="Delete ${esc(entry.name)}" title="Delete entry">${ICONS.trash}</button></div>
       <section class="diary-nutrition" id="diary-nutrition-${esc(entry.id)}" data-diary-nutrition="${esc(entry.id)}" aria-label="Detailed nutrition for ${esc(entry.name)}" ${expandedId===entry.id?'':'hidden'}>
@@ -127,7 +133,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
   }
   function rememberAnalysis(context,result) {
     try {
-      const current=loadDiary(), next=cacheDiaryAnalysis(current,context,result);
+      const current=readEntries(), next=cacheDiaryAnalysis(current,context,result);
       return next!==current && commit(next);
     } catch(error) { toast(error.message,'error'); return false; }
   }
@@ -137,6 +143,10 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
     if(!entry.analysis && !nutritionStates.get(id)?.analysis && isAnalysisBusy()){toast("Finish the current request first.");return;}
     expandedId=id;
     if(entry.analysis || nutritionStates.get(id)?.analysis){render();nutritionButton(id)?.focus({preventScroll:true});return;}
+    if(demoView) {
+      nutritionStates.set(id,{analysis:demoAnalyze(entry.name,false),name:entry.name,calories:entry.calories});
+      render();nutritionButton(id)?.focus({preventScroll:true});return;
+    }
     const controller=new AbortController();pending=controller;nutritionPending=id;
     const detail={name:entry.name,calories:entry.calories,loading:true,status:'Analysing detailed nutrition…'};
     nutritionStates.set(id,detail);render();
@@ -163,7 +173,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
   }
   function commit(next) {
     if(blocked) { toast('Diary storage is unavailable.','error'); return false; }
-    try { saveDiary(next); entries=next; message.hidden=true; render(); document.dispatchEvent(new CustomEvent('nutrilens:diary-changed')); return true; }
+    try { writeEntries(next); entries=next; message.hidden=true; render(); document.dispatchEvent(new CustomEvent('nutrilens:diary-changed')); return true; }
     catch(error) { message.textContent=error.message; message.hidden=false; toast(error.message,'error'); return false; }
   }
   function edit(id) {
@@ -185,6 +195,12 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
     const input={date:selected,name:$('#diary-food').value,meal:$('#diary-meal').value,calories:$('#diary-calories').value};
     const needsEstimate=input.calories.trim()==='';
     const editId=editing, original=draft;
+    let demoInput=null, demoTicket=null;
+    if(demoView) {
+      try { demoInput=demoDiaryInput(input); }
+      catch(error) { message.textContent=error.message;message.hidden=false;toast(error.message,'error');return; }
+      if(!editId) { demoTicket=beginDemoUse('diary');if(!demoTicket)return; }
+    }
     const controller=new AbortController();
     pending=controller;
     $('#diary-save').textContent=needsEstimate?'Estimating…':'Saving…';
@@ -193,14 +209,16 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
     message.hidden=true;render();
     let saved=false;
     try {
-      const resolved=await resolveDiaryInput({input,settings:{...getSettings()},original,signal:controller.signal,onStatus:status=>{$('#diary-estimate-status').textContent=status;}});
+      let resolved;
+      if(demoInput) { await waitForDemo(controller.signal); resolved=demoInput; }
+      else resolved=await resolveDiaryInput({input,settings:{...getSettings()},original,signal:controller.signal,onStatus:status=>{$('#diary-estimate-status').textContent=status;}});
       if(controller.signal.aborted)return;
       // Keep a completed estimate in the form if saving fails; retry will not make a second AI call.
       if(needsEstimate){$('#diary-calories').value=resolved.calories;draft=resolved;}
-      const current=loadDiary();
+      const current=readEntries();
       const next=editId ? updateEntry(current,editId,resolved) : [...current,createEntry(resolved)];
       saved=commit(next);
-      if(saved)toast(needsEstimate?'Calories estimated and logged. Daily total updated.':editId?'Entry updated. Daily total recalculated.':'Food logged. Daily total updated.','success');
+      if(saved)toast(demoInput ? 'Sample meal added to the demo diary' : needsEstimate?'Calories estimated and logged. Daily total updated.':editId?'Entry updated. Daily total recalculated.':'Food logged. Daily total updated.','success');
     } catch(error) {
       const text=error.name==='AbortError'?'Estimation cancelled. No food was logged.':error.message;
       message.textContent=text;message.hidden=false;
@@ -211,6 +229,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
       else $('#diary-save').textContent=editing?'Save changes':'Add entry';
       render();
       if(saved)$('#diary-food').focus();
+      if(saved)demoTicket?.complete();else demoTicket?.release();
     }
   });
   $('#diary-cancel-estimate').addEventListener('click',()=>pending?.abort());
@@ -230,7 +249,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
   $('#diary-analyse-food').addEventListener('click',()=>{setView('analysis');$('#input').focus();});
   function reload() {
     try {
-      entries=loadDiary();blocked=false;message.hidden=true;
+      entries=readEntries();blocked=false;message.hidden=true;
       if(editing && !entries.some(entry=>entry.id===editing))resetForm();
     } catch(error) { blocked=true;message.textContent=error.message;message.hidden=false; }
     render();
@@ -248,6 +267,16 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false }) {
   render();
   return {
     isBusy:()=>!!pending,
+    cancel:()=>pending?.abort(),
+    refreshMode() {
+      const next=Boolean(getSettings().demoMode);
+      if(next===demoView){render();return;}
+      pending?.abort();demoView=next;editing=null;draft=null;expandedId=null;nutritionStates.clear();blocked=false;
+      form.reset();$('#diary-cancel-edit').hidden=true;$('#diary-draft-note').hidden=true;$('#diary-save').textContent='Add entry';
+      try { entries=readEntries();message.hidden=true; }
+      catch(error) { entries=[];blocked=true;message.textContent=error.message;message.hidden=false; }
+      render();
+    },
     refreshLanguage:()=>render(),
     rememberAnalysis,
     showNutrition(id) {

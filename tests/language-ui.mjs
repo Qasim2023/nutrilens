@@ -1,3 +1,4 @@
+import {withoutSentencePeriods} from "../src/interface-text.js";
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import http from 'node:http';
@@ -28,7 +29,7 @@ try{
     assert.equal(await page.locator('html').getAttribute('dir'),language.direction||'ltr');
     assert.equal((await page.locator('#view-analysis').textContent()).trim(),translate('Analyse food',language.code));
     assert.equal((await page.locator('label[for="set-language"]').textContent()).trim(),translate('Language',language.code));
-    assert.equal((await page.locator('.hero > p').textContent()).trim(),translate("Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.",language.code));
+    assert.equal((await page.locator('.hero > p').textContent()).trim(),withoutSentencePeriods(translate("Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.",language.code)));
     assert.equal(await page.locator('#diary-calories').getAttribute('placeholder'),'123');
     assert.equal(await page.locator('.brand-tag').count(),0);
     assert.equal(await page.title(),'NutriLens');

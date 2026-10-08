@@ -9,6 +9,10 @@ import { defaults, loadSettings, saveSettings, resetSettings, loadSession, saveS
 import { esc, fmt, ICONS, renderResult, renderLoading, renderError, resultToMarkdown, resultToCsv } from "./render.js";
 import { compressImage, makeThumbnail, formatBytes } from "./image.js";
 import { demoAnalyze } from "./demo.js";
+import {withoutSentencePeriods} from "./interface-text.js";
+import {waitForDemo} from "./demo-experience.js";
+import {createOnboardingStore} from "./onboarding-store.js";
+import {initOnboarding} from "./onboarding.js";
 import { readAttachment, fitsAttachmentBudget, MAX_ATTACHMENTS } from "./attachments.js";
 import { shouldAnalyzeOnEnter } from "./keyboard.js";
 import { initFooter } from "./footer.js";
@@ -17,7 +21,9 @@ import { initRecipeStudio } from './recipes.js';
 import { normalizeMaxTokens } from './output-tokens.js';
 import { createHistoryRepository } from "./history-store.js";
 import { initMealLibrary, diaryRequestText } from "./meal-library.js";
-let diary, mealLibrary, recipeStudio;
+let diary, mealLibrary, recipeStudio, onboarding;
+// Detect a first visit before loadSettings migrates and saves preferences
+const onboardingStore = createOnboardingStore();
 let historyChannel;
 const historyRepository = createHistoryRepository({ notify: () => { historyChannel?.postMessage('changed'); mealLibrary?.refresh(); } });
 
@@ -292,6 +298,9 @@ async function runAnalysis() {
       if (state.settings.auth !== "none" && !state.settings.apiKey.trim()) throw new Error("This endpoint requires an API key. Enter it in Settings, not in chat.");
     } catch (error) { toast(error.message, "error"); openDrawer(); return; }
   }
+  const demoTicket = state.settings.demoMode ? onboarding.beginDemoUse("analysis") : null;
+  if (state.settings.demoMode && !demoTicket) return;
+  let demoSucceeded = false;
   const image = state.image;
   const originalInput = { text, image: image ? structuredClone(image) : null, attachments: state.attachments.map(a=>({name:a.name,text:a.text,type:a.type,size:a.size,pages:a.pages})), diaryContext: state.diaryContext ? structuredClone(state.diaryContext) : null };
   const requestText = diaryRequestText(text, originalInput.diaryContext);
@@ -311,10 +320,7 @@ async function runAnalysis() {
   try {
     let result;
     if (useDemo) {
-      await new Promise((resolve, reject) => {
-        const timer = setTimeout(resolve, 650);
-        state.controller.signal.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('Cancelled', 'AbortError')); }, { once: true });
-      });
+      await waitForDemo(state.controller.signal);
       result = demoAnalyze(text, Boolean(image));
     } else {
       result = await analyzeFood({
@@ -345,7 +351,7 @@ async function runAnalysis() {
       state.lastSavedEntry={version:2,id:crypto.randomUUID(),when:Date.now(),dish:result.dish,model:settings.model,thumb,text,input:originalInput,result:structuredClone(result),view:structuredClone(state.lastRenderOptions)};
       await saveLastAnalysis();
     } else state.lastSavedEntry=null;
-    if (useDemo) toast("Demo estimate shown. Add an API key in Settings to analyse your food.", "info", 6000);
+    if (useDemo) { demoSucceeded = true; toast("Sample analysis ready — use End demo whenever you are ready to connect your provider", "info", 6000); }
   } catch (err) {
     if (err?.name === "AbortError") {
       resultHost.innerHTML = `<div class="card"><div class="empty"><p>Analysis cancelled. Your photo and description are still available.</p></div></div>`;
@@ -358,6 +364,8 @@ async function runAnalysis() {
     state.busy = false;
     state.controller = null;
     setBusyUI(false);
+    if (demoSucceeded) demoTicket?.complete();
+    else demoTicket?.release();
   }
 }
 
@@ -542,7 +550,7 @@ function updateProviderHint() {
   if (p === "azure") bits.push("Replace the resource and deployment placeholders in the base URL. An <code>api-version</code> query is appended automatically.");
   if (p === "openrouter") bits.push("Use <code>openrouter.ai/api/v1</code>; vision models start with e.g. <code>openai/gpt-4o</code>.");
   if (!bits.length) bits.push("Fetch your provider’s model list, select a model, then test the connection.");
-  hint.innerHTML = bits.join(" ");
+  hint.innerHTML = bits.map(withoutSentencePeriods).join(" ");
 }
 
 function updateKeyVisibility() {
@@ -561,7 +569,7 @@ function applyProviderPreset(id) {
   state.settings.keyHeader = preset.keyHeader;
   if (!previousModel || wasSuggested) state.settings.model = (MODEL_SUGGESTIONS[id] || [])[0] || "";
   state.settings.apiFormat = "auto";
-  state.settings.demoMode = false;
+  // Provider selection must not silently end an active demo
   clearModelDiscovery();
   persist();
   syncDrawer();
@@ -576,6 +584,7 @@ function persist() {
   applyTheme();
   updateEndpointPreview();
   updateComposerHint();
+  onboarding?.refresh();
 }
 /* -------------------------------------------------------------------------- */
 /* History                                                                     */
@@ -674,7 +683,7 @@ function wireEvents() {
   $("#set-provider").addEventListener("change", (e) => applyProviderPreset(e.target.value));
   bindText("#set-baseurl", "baseUrl");
   for (const [sel, key] of [["#set-apiformat", "apiFormat"], ["#set-transport", "transport"]]) { $(sel).addEventListener("change", e => { state.settings[key] = e.target.value; persist(); }); }
-  bindToggle("#set-demo", "demoMode");
+  $("#set-demo").addEventListener("click", () => onboarding.toggleDemo());
   $("#available-models").addEventListener("change", e => { state.settings.model = e.target.value; $("#set-model").value = e.target.value; persist(); });
   bindText("#set-model", "model");
   bindText("#set-apikey", "apiKey");
@@ -708,7 +717,7 @@ function wireEvents() {
   $("#models-btn").addEventListener("click", onListModels);
   $("#reset-btn").addEventListener("click", () => {
     if (!confirm("Reset all NutriLens settings to defaults? Your saved history is kept.")) return;
-    state.settings = resetSettings();
+    state.settings = {...resetSettings(), demoMode: onboardingStore.snapshot().status === "demo"};
     clearModelDiscovery();
     persist(); syncDrawer();
     recipeStudio?.refreshLanguage();
@@ -828,10 +837,10 @@ function boot() {
   }
   updateKeyVisibility();
 
-  diary = initDiary({ toast, getSettings: currentSettings, isAnalysisBusy:()=>state.busy || state.readingAttachments });
+  diary = initDiary({ toast, getSettings: currentSettings, isAnalysisBusy:()=>state.busy || state.readingAttachments, beginDemoUse: feature => onboarding.beginDemoUse(feature) });
   mealLibrary = initMealLibrary({history:historyRepository,onOpenAnalysis:displaySavedAnalysis,onChooseDiary:selectDiaryMeal,onReanalyse:prepareSavedAnalysis,onBeforeOpen:()=>{if($("#drawer").classList.contains('open'))closeDrawer();diary.showAnalysis();},onAllDeleted:source=>{if(source==='history'){state.lastSavedEntry=null;state.viewingSaved=false;$("#saved-analysis-banner").hidden=true;$("#history-save-status").hidden=true;}else{state.diaryContext=null;renderAnalysisOrigin();}},isBusy:()=>state.busy || state.readingAttachments || diary.isBusy(),toast});
   if(typeof BroadcastChannel !== 'undefined'){historyChannel=new BroadcastChannel('nutrilens-history');historyChannel.onmessage=()=>mealLibrary.refresh();}
-  recipeStudio = initRecipeStudio({ getSettings: currentSettings, isProviderReady: hasRemoteModel, openSettings: openDrawer });
+  recipeStudio = initRecipeStudio({ getSettings: currentSettings, isProviderReady: hasRemoteModel, openSettings: openDrawer, beginDemoUse: feature => onboarding.beginDemoUse(feature), getDemoRecipeIndex: () => onboardingStore.snapshot().used.recipes });
   wireEvents();
   initFooter();
 
@@ -841,6 +850,15 @@ function boot() {
 
   // Keyboard shortcut hint / model badge in the composer.
   updateComposerHint();
+  onboarding = initOnboarding({
+    store: onboardingStore, getSettings: currentSettings, openSettings: openDrawer,
+    cancelRequests: () => { state.controller?.abort(); diary?.cancel(); recipeStudio?.cancel(); },
+    onModeChange: demoMode => {
+      state.settings.demoMode = demoMode; persist(); syncDrawer();
+      diary?.refreshMode(); recipeStudio?.refreshMode();
+    },
+  });
+  diary.refreshMode(); recipeStudio.refreshMode();
 }
 
 function updateEndpointPreview() {

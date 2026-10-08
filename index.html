@@ -42,6 +42,10 @@
     <button class="view-button" type="button" id="view-diary" aria-pressed="false" aria-controls="diary-panel"><span class="icon-slot" id="diary-nav-icon"></span> Daily food diary <span class="diary-nav-total" id="diary-today-total">0 kcal today</span></button>
     <button class="view-button" type="button" id="view-recipes" aria-pressed="false" aria-controls="recipes-panel"><span class="icon-slot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4.4-2.8-7-6.6-7-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 7 3.6C19 14.4 16.4 18.2 12 21Z"/><path d="M12 7c-.2-2.1.8-3.6 2.8-4"/></svg></span> Recipes</button>
   </nav>
+  <section class="demo-banner" id="demo-banner" aria-label="Demo mode" hidden>
+    <div><strong>Demo mode</strong><p>Explore sample analyses, diary meals and recipes without an API key</p><small>Sample data only — photos and dietary requests are not analysed</small></div>
+    <button class="btn btn-sm" id="demo-end-btn" type="button">End demo</button>
+  </section>
   <div id="analysis-view">
   <div class="analysis-library-toolbar"><button class="btn btn-sm" type="button" id="meal-library-toggle" aria-expanded="false" aria-controls="meal-library"><span class="icon-slot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span> Previous analyses &amp; meals</button><button class="btn btn-ghost btn-sm" type="button" id="choose-diary-meal">Choose a diary meal</button><span class="library-toolbar-note">Revisit saved results or analyse a logged food</span></div>
   <section class="hero">
@@ -114,7 +118,8 @@
         <h2>Add food or calories</h2><p>Describe your food and leave calories blank for an estimate. Enter calories yourself to skip the estimate.</p>
         <div class="diary-draft-note" id="diary-draft-note" hidden></div>
         <div class="diary-estimating" id="diary-estimating" role="status" aria-live="polite" hidden><span class="spinner"></span><span id="diary-estimate-status">Estimating calories…</span><button class="btn btn-sm btn-ghost" id="diary-cancel-estimate" type="button">Cancel estimate</button></div>
-        <form id="diary-form">
+        <p class="demo-feature-note" id="diary-demo-note" hidden>Demo diary — sample meals stay separate from your real diary</p>
+<form id="diary-form">
           <div class="field"><label for="diary-food">Food / meal</label><input class="input" id="diary-food" type="text" maxlength="160" placeholder="e.g. Oatmeal and a banana" autocomplete="off"></div>
           <div class="diary-form-row">
             <div class="field"><label for="diary-calories">Calories eaten (kcal) <span class="optional">(optional)</span></label><input class="input" id="diary-calories" type="number" min="0" max="100000" step="0.1" inputmode="decimal" placeholder="123" aria-describedby="diary-calorie-help"></div>
@@ -157,7 +162,7 @@
             <div class="field"><label for="recipe-time">Ready in</label><select class="select" id="recipe-time"><option value="0">Any time</option><option value="15">15 min</option><option value="20">20 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
           </div>
           <button class="btn btn-primary recipe-generate" id="recipe-generate" type="submit"><span class="recipe-sparkle" aria-hidden="true">✦</span><span id="recipe-generate-label">Generate 3 recipes</span></button>
-          <p class="recipe-provider-note">Uses the model selected in Settings. Save recipes to keep them in this browser.</p>
+          <p class="recipe-provider-note" id="recipe-provider-note">Uses the model selected in Settings. Save recipes to keep them in this browser.</p>
         </form>
 
         <section class="card recipe-ideas" aria-labelledby="recipe-ideas-title">
@@ -193,7 +198,8 @@
         <div class="recipe-results" id="recipe-results" role="region" aria-label="Recipe results">
           <div class="recipe-empty" id="recipe-empty"><span class="recipe-empty-mark" aria-hidden="true">✦</span><h3>Ready when you are</h3><p>Add ingredients and any dietary preferences, then choose Generate 3 recipes. Detailed ideas will appear here.</p></div>
           <div class="recipe-empty" id="recipe-saved-empty" hidden><span class="recipe-empty-mark" aria-hidden="true">♡</span><h3>No saved recipes yet</h3><p>Choose Save recipe on an idea to keep it here.</p></div>
-          <div class="recipe-results-list" id="recipe-results-list"></div>
+          <p class="demo-feature-note" id="recipe-demo-note" hidden>Demo recipe — a fixed example, not tailored to your request or dietary needs</p>
+<div class="recipe-results-list" id="recipe-results-list"></div>
         </div>
         <p class="recipe-nutrition-disclaimer">Nutrition is estimated, not medical advice. Allergy safety and cross-contact cannot be guaranteed; check ingredient labels and preparation.</p>
       </section>
@@ -255,6 +261,10 @@
         <p class="desc">Nutrition values are estimates, not medical advice. Food illustrations are representative, not photos of your portion.</p>
       </div>
     </details>
+    <section class="setup-guide-card" aria-labelledby="settings-guide-title">
+      <div><h3 id="settings-guide-title">Need help connecting your provider?</h3><p>A simple guide to your API key, model and answer length</p></div>
+      <button class="btn btn-sm" id="api-setup-guide-btn" type="button">API Setup Guide</button>
+    </section>
     <div class="field">
       <label for="set-language">Language</label>
       <div class="desc" id="language-help">Choose the app and analysis language. Saved automatically.</div>
@@ -389,7 +399,7 @@
     <div class="field">
       <label>Preferences</label>
       <div class="toggle-row">
-        <div class="t-label">Demo mode<small>Only sample data. Does not analyse photos or use your API.</small></div>
+        <div class="t-label">Demo mode<small>Explore sample data without using your API key</small></div>
         <button class="toggle" id="set-demo" type="button" role="switch" aria-checked="false" aria-label="Demo mode"></button>
       </div>
       <div class="toggle-row">
@@ -464,5 +474,30 @@
 
 <script type="module" src="./src/app.js"></script>
 <noscript><div style="padding:40px;text-align:center">NutriLens requires JavaScript to analyse food.</div></noscript>
+
+<!-- First-visit onboarding and reusable provider setup help -->
+<dialog class="onboarding-dialog" id="onboarding-welcome" aria-labelledby="welcome-title" aria-describedby="welcome-description">
+  <div class="onboarding-heading"><div><span class="onboarding-kicker">Welcome to NutriLens</span><h2 id="welcome-title">Is this your first visit?</h2></div></div>
+  <p id="welcome-description">If you are new, start with a demo version to learn how the app works before connecting your own provider</p>
+  <div class="welcome-features"><span>Explore food analysis</span><span>Try the daily diary</span><span>Discover recipes</span></div>
+  <p class="onboarding-muted">The demo uses sample data, not real photo analysis or personalised recipes — no API key is needed</p>
+  <p class="onboarding-muted">Already familiar with the app? Continue normally and use your own connection</p>
+  <div class="onboarding-actions"><button class="btn btn-ghost" id="welcome-returning" type="button">I've used NutriLens before</button><button class="btn btn-primary" id="welcome-demo" type="button" autofocus>I'm new — start demo</button></div>
+</dialog>
+<dialog class="onboarding-dialog setup-dialog" id="api-setup-guide" aria-labelledby="api-guide-title" aria-describedby="api-guide-description">
+  <div class="onboarding-heading"><div><span class="onboarding-kicker">Make NutriLens your own</span><h2 id="api-guide-title">API Setup Guide</h2></div><button class="icon-btn" id="api-guide-close" type="button" aria-label="Close API Setup Guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+  <p id="api-guide-description">Ready to use your own food and requests? Connect a provider using these simple steps — you do not need technical experience</p>
+  <p class="demo-feature-note" id="api-guide-demo-message" hidden>This part of the demo is complete — try the other demo features or connect your own provider</p>
+  <ol class="api-guide-steps">
+    <li><div><h3>Choose your provider</h3><p>A provider is the service that processes your food and recipe requests</p><p>In Settings, choose a Provider preset — this fills in its API base URL for you</p><p>If yours is not listed, choose Custom endpoint and copy the base URL from your provider's instructions</p><button class="btn btn-ghost btn-sm" type="button" data-setup-field="set-provider">Choose provider</button></div></li>
+    <li><div><h3>Add your API key</h3><p>Sign in to your provider's website, find its API keys section and create a key</p><p>An API key works like a password — paste it into the API key field in Settings, never into the food description</p><p>Provider usage may cost money — check its pricing and account balance first</p><p>Keys are saved in this browser without encryption — use a trusted device and Reset settings to remove them</p><p>Using a local provider that does not need a key? Select No key under Authentication style</p><button class="btn btn-ghost btn-sm" type="button" data-setup-field="set-apikey">Add API key</button></div></li>
+    <li><div><h3>Fetch and choose a model</h3><p>Click Fetch available models, then choose a model from the list above that button</p><p>A model is the tool your provider uses to answer your requests — choose one that supports images if you want to analyse photos</p><p>If your provider cannot list models, copy its exact model ID into the Model field instead</p><button class="btn btn-ghost btn-sm" type="button" data-setup-field="models-btn">Choose model</button></div></li>
+    <li><div><h3>Adjust answer length only if needed</h3><p>Max output tokens controls how long an answer can be — tokens are small pieces of text</p><p>Start with the saved default of 20,000 — leave it alone if your provider accepts it and answers are complete</p><p>If an answer is cut short, increase it within your model's supported limit — if the provider says it is too high, lower it</p><p>NutriLens accepts 256–32,000 output tokens — higher limits may cost more</p><button class="btn btn-ghost btn-sm" type="button" data-setup-field="set-maxtokens">Adjust token limit</button></div></li>
+    <li><div><h3>Test, then start using the app</h3><p>Click Test connection in Settings and wait for a success message</p><p>Settings save automatically — close Settings to analyse your food, log diary meals or generate recipes</p><p>If the test fails, check the provider URL, key and model, then try again</p><button class="btn btn-ghost btn-sm" type="button" data-setup-field="test-btn">Test connection</button></div></li>
+  </ol>
+  <p class="onboarding-muted">You can close this guide and reopen it any time from Settings → API Setup Guide</p>
+  <div class="onboarding-actions"><button class="btn btn-ghost" id="api-guide-dismiss" type="button">Not now</button><button class="btn btn-primary" id="api-guide-settings" type="button">Open Settings</button></div>
+</dialog>
+
 </body>
 </html>

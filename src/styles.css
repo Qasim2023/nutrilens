@@ -794,3 +794,36 @@ body:has(.footer-info[open]) { overflow: hidden; }
   .recipe-export-controls .select { flex:1; min-width:0; }
   .recipe-card-actions .btn { flex:1; }
 }
+
+/* First-visit demo and reusable provider setup guide */
+.demo-banner,.setup-guide-card { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 20px; margin-bottom:20px; border:1px solid var(--brand); border-radius:16px; background:var(--brand-soft); }
+.demo-banner strong,.setup-guide-card h3 { color:var(--brand); font-size:14px; margin:0; }
+.demo-banner p,.setup-guide-card p { margin:5px 0 0; color:var(--text-2); font-size:12px; line-height:1.5; }
+.demo-banner small { display:block; margin-top:4px; color:var(--text-3); font-size:11px; }
+.demo-banner .btn { flex-shrink:0; }
+.setup-guide-card { padding:14px; flex-wrap:wrap; margin-bottom:24px; border-color:var(--border-strong); }
+.demo-feature-note { padding:12px 14px; margin:0 0 16px; color:var(--brand); background:var(--brand-soft); border:1px solid var(--border); border-radius:12px; font-size:12px; line-height:1.6; }
+.onboarding-dialog { width:min(620px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); padding:28px; border:1px solid var(--border-strong); border-radius:22px; background:var(--surface-solid); color:var(--text); box-shadow:var(--shadow); overscroll-behavior:contain; }
+.onboarding-dialog::backdrop { background:rgba(3,8,15,.78); backdrop-filter:blur(7px); }
+.onboarding-dialog p { font-size:14px; line-height:1.7; color:var(--text-2); }
+.onboarding-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.onboarding-heading h2 { margin:8px 0 0; font-size:27px; line-height:1.25; letter-spacing:-.5px; }
+.onboarding-heading .icon-btn { flex-shrink:0; }
+.onboarding-kicker { color:var(--brand); font-size:11px; font-weight:750; text-transform:uppercase; letter-spacing:1.3px; }
+.onboarding-dialog .onboarding-muted { font-size:12px; color:var(--text-3); }
+.welcome-features { display:flex; flex-wrap:wrap; gap:8px; margin:22px 0; }
+.welcome-features span { padding:9px 12px; background:var(--brand-soft); border:1px solid var(--border); border-radius:10px; font-size:12px; color:var(--brand); }
+.onboarding-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; margin-top:24px; padding-top:18px; border-top:1px solid var(--border); }
+.setup-dialog { width:min(720px,calc(100vw - 32px)); }
+.api-guide-steps { list-style:none; counter-reset:setup; display:grid; gap:13px; padding:0; margin:22px 0; }
+.api-guide-steps li { counter-increment:setup; display:flex; align-items:flex-start; gap:13px; padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--bg-2); }
+.api-guide-steps li::before { content:counter(setup); display:grid; place-items:center; flex:0 0 29px; height:29px; border-radius:9px; color:var(--brand); background:var(--brand-soft); font-size:13px; font-weight:800; }
+.api-guide-steps h3 { margin:3px 0 8px; font-size:14px; }
+.api-guide-steps p { margin:6px 0; font-size:12px; line-height:1.65; }
+.api-guide-steps .btn { margin-top:8px; }
+@media(max-width:560px) { .demo-banner { align-items:flex-start; padding:14px; gap:10px; } .onboarding-dialog { padding:20px; } .onboarding-heading h2 { font-size:23px; } .onboarding-actions .btn { width:100%; } .api-guide-steps li { padding:13px 10px; gap:10px; } }
+
+/* Keep cancellation available while reading a long guide */
+.setup-dialog .onboarding-heading { position:sticky; top:-28px; z-index:2; padding:12px 0; background:var(--surface-solid); }
+.setup-dialog .onboarding-actions { position:sticky; bottom:-28px; z-index:2; padding:16px 0 12px; background:var(--surface-solid); }
+@media(max-width:560px) { .setup-dialog .onboarding-heading { top:-20px; } .setup-dialog .onboarding-actions { bottom:-20px; } }

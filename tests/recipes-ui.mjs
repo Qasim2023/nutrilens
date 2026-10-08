@@ -35,6 +35,8 @@ try {
     return { filename: download.suggestedFilename(), content: Buffer.concat(chunks).toString('utf8') };
   }
   await page.goto(origin);
+  // This regression exercises the normal app, not first-visit onboarding
+  if (await page.locator('#onboarding-welcome').evaluate(el=>el.open)) await page.locator('#welcome-returning').click();
   await page.locator('#view-recipes').click();
   assert.equal(await page.locator('#recipe-export-all').isDisabled(), true);
   await page.locator('#recipe-show-saved').click();

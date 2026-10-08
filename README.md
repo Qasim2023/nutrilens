@@ -26,6 +26,23 @@ The app ships with no API key, account, default endpoint or selected model. Each
 
 Preferences, provider URL, selected model, API key and custom headers save in this browser and survive refreshes. Existing visitor settings and local history are preserved when upgrading, and migrations never inject a maintainer endpoint. No browser data is copied into a deployment.
 
+## First-visit demo and setup help
+
+A first visit asks whether the visitor is new — new users can start a clearly labelled local demo, while returning users continue normally
+Existing connection settings, credentials, real meals and saved recipes never trigger a forced demo
+
+- The demo privately tracks two successful analyses, two new diary meals and two sample recipes per browser — the interface does not display usage counts
+- Cancelling a request, invalid input or a failed save does not consume a demo use — progress survives refreshes and settings resets
+- Demo analyses are not saved as real results — demo diary meals use separate browser storage, and fixed recipe examples cannot be saved or exported as personalised recipes
+- **End demo** stays visible above every app section and immediately cancels pending sample work
+- Completing the demo or ending it early opens the **API Setup Guide** — it explains provider selection, key creation, fetching and choosing a model, output-token limits and testing the connection
+- **Not now**, the close button, Escape or the backdrop dismiss the guide — reopen it from the shortcut near the top of **Settings**
+- Setup shortcuts take the visitor to the matching settings field without making provider requests automatically
+- Onboarding and usage state live in **nutrilens.onboarding.v1** — sample diary entries live in **nutrilens.demoDiary.v1** and are excluded from real-meal backups
+- Browser data is local, not an account-based quota system — clearing site storage or using another browser creates a fresh visitor
+
+Visible interface and generated-result prose omit sentence-ending periods while preserving decimal values, URLs, filenames, abbreviations and raw saved/exported data
+
 ## Recipes and output limits
 
 - Open **Recipes**, describe what you want to cook, and generate recipe ideas.
@@ -54,7 +71,7 @@ Preferences, provider URL, selected model, API key and custom headers save in th
 - API errors are shown instead of fake results. Bad JSON receives one repair attempt; HTML, empty responses and incomplete output are rejected.
 - Fetching models uses `/models` even when you entered a full completion URL.
 - This supports OpenAI-compatible formats, not arbitrary provider-specific schemas. Anthropic native Messages and Gemini native APIs require a compatible gateway.
-- Demo mode is opt-in, clearly labelled sample data. It does not analyse photos and is not a nutrition database for real use.
+- The first-visit demo is opt-in, clearly labelled sample data. It does not analyse photos and is not a nutrition database for real use.
 
 ## Privacy and relay security
 
@@ -128,7 +145,7 @@ Implementation: `src/diary-store.js` (validation, calendar handling, storage and
 
 ### Automatic diary calorie estimates
 
-Blank-calorie submissions require a real configured model and key (or a no-auth local provider). Demo mode cannot create automatic estimates. While estimating, submission and date/entry controls are locked to prevent duplicate or misdated entries. **Cancel estimate** stops the request without logging food. Authentication, network or invalid-response errors keep your description and leave the total unchanged; enter calories manually or retry. Clearing calories on an edited entry re-estimates that entry rather than adding a duplicate. If an estimate finishes but local storage cannot save it, the returned calories remain in the form so a retry need not call AI again.
+Blank-calorie submissions require a real configured model and key (or a no-auth local provider). The real diary never substitutes sample estimates; the onboarding demo uses its own isolated sample diary. While estimating, submission and date/entry controls are locked to prevent duplicate or misdated entries. **Cancel estimate** stops the request without logging food. Authentication, network or invalid-response errors keep your description and leave the total unchanged; enter calories manually or retry. Clearing calories on an edited entry re-estimates that entry rather than adding a duplicate. If an estimate finishes but local storage cannot save it, the returned calories remain in the form so a retry need not call AI again.
 
 Tests: `tests/diary-estimate.test.mjs` covers automatic/manual selection, zero calories, configuration failures, errors, cancellation, edits, persisted assumptions and diary validation. `tests/diary-ui-server.mjs` is an isolated loopback mock-provider UI test server (ports 5188/5190); it never sends food to an external provider.
 
@@ -242,7 +259,7 @@ Built 64-bit Windows executables are in `release/`:
 
 The desktop app includes its own browser runtime and local server. Closing its window stops the server. It uses loopback port **17843** and will report an error rather than open an unrelated service if that port is occupied. Only one NutriLens desktop instance runs at a time.
 
-Open **Settings** on first launch to configure your AI provider, key, and model. Remote AI still needs internet access and any applicable provider account/quota; local providers work when their server is running. Manual diary entries do not require AI. Desktop settings, history, and diary data are saved in the app's Windows user profile, shared by portable and installed launches. The portable EXE is portable software, not portable user data. Data from a regular browser is separate and is not automatically imported. API keys remain in browser localStorage, not an encrypted vault; Reset settings removes them.
+On first launch, choose the local demo or continue normally, then use **Settings → API Setup Guide** to configure your provider, key, and model. Remote AI still needs internet access and any applicable provider account/quota; local providers work when their server is running. Manual diary entries do not require AI. Desktop settings, history, and diary data are saved in the app's Windows user profile, shared by portable and installed launches. The portable EXE is portable software, not portable user data. Data from a regular browser is separate and is not automatically imported. API keys remain in browser localStorage, not an encrypted vault; Reset settings removes them.
 
 These locally built executables are **not code-signed**, so Windows may show an unknown-publisher or SmartScreen warning. No signing certificate is included.
 

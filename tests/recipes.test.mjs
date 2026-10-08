@@ -114,7 +114,7 @@ function fakeElement(){
   return element;
 }
 function fakeRecipeDocument(){
-  const selectors=['#recipe-form','#recipe-instructions','#recipe-servings','#recipe-time','#recipe-generate','#recipe-generate-label','#recipe-setup-note','#recipe-error','#recipe-status','#recipe-status-text','#recipe-cancel','#recipe-empty','#recipe-results-list','#recipe-announcement','#recipe-guide','#recipe-guide-dismiss','#recipe-settings-button','#recipe-show-generated','#recipe-show-saved','#recipe-saved-count','#recipe-saved-empty','#recipe-saved-note','#recipe-export-format','#recipe-export-all'];
+  const selectors=['#recipe-form','#recipe-instructions','#recipe-servings','#recipe-time','#recipe-generate','#recipe-generate-label','#recipe-provider-note','#recipe-setup-note','#recipe-error','#recipe-status','#recipe-status-text','#recipe-cancel','#recipe-empty','#recipe-results-list','#recipe-demo-note','#recipe-announcement','#recipe-guide','#recipe-guide-dismiss','#recipe-settings-button','#recipe-show-generated','#recipe-show-saved','#recipe-saved-count','#recipe-saved-empty','#recipe-saved-note','#recipe-export-format','#recipe-export-all'];
   const elements=new Map(selectors.map(selector=>[selector,fakeElement()]));
   const listeners=new Map();
   return {elements,document:{querySelector(selector){if(!elements.has(selector))throw new Error('Unexpected selector '+selector);return elements.get(selector);},querySelectorAll(){return [];},addEventListener(type,handler){listeners.set(type,handler);}},openRecipes(){listeners.get('nutrilens:recipes-open')?.();}};
