@@ -1,4 +1,4 @@
-import {withoutSentencePeriods} from "./interface-text.js";
+import {formatDisplayText,withoutTextDashes} from "./interface-text.js";
 import {demoAnalyze} from "./demo.js";
 import {demoDiaryInput, demoDiaryStorage, waitForDemo} from "./demo-experience.js";
 import {foodPicture} from './food-picture.js';
@@ -37,7 +37,7 @@ export function renderDiaryNutrition(entry, detail={}) {
     ${detail.saveFailed ? '<button class="btn btn-sm" type="button" data-save-diary-nutrition="'+esc(entry.id)+'">Retry saving</button>' : ''}
     ${renderResult(analysis,{imageUrl:diaryThumbnail(entry.thumb),model:analysis.meta?.model,showMicros:true,showItems:true,showSwaps:true,showActions:false,isEstimate:Boolean(analysis.meta?.demo)})}`;
   if(detail.loading) return `<div class="diary-nutrition-status" role="status"><span class="spinner" aria-hidden="true"></span><span data-nutrition-status>${esc(detail.status || 'Analysing detailed nutrition…')}</span><button class="btn btn-sm" type="button" data-cancel-diary-nutrition>Cancel</button></div>`;
-  if(detail.error) return `<div class="diary-warning" role="alert"><strong>Analysis failed</strong><p data-i18n-skip>${esc(withoutSentencePeriods(translate(detail.error)))}</p><button class="btn btn-sm" type="button" data-retry-diary-nutrition="${esc(entry.id)}">Retry</button></div>`;
+  if(detail.error) return `<div class="diary-warning" role="alert"><strong>Analysis failed</strong><p data-i18n-skip>${esc(formatDisplayText(translate(detail.error)))}</p><button class="btn btn-sm" type="button" data-retry-diary-nutrition="${esc(entry.id)}">Retry</button></div>`;
   return '';
 }
 
@@ -94,7 +94,7 @@ export function initDiary({ toast, getSettings, isAnalysisBusy=()=>false, beginD
     const items=dayEntries(entries,selected);
     $('#diary-entries').innerHTML=items.length ? items.map(entry=>`<article class="diary-entry" data-diary-entry="${esc(entry.id)}">
       ${renderDiaryThumbnail(entry, entry.analysis || nutritionStates.get(entry.id)?.analysis)}
-      <div class="diary-entry-description"><strong data-i18n-skip>${esc(entry.name)}</strong><small>${esc(MEALS.find(([key])=>key===entry.meal)[1])} · ${entry.source==='ai'?'Estimated nutrition':'Manual entry'}</small>${entry.nutrients ? `<small>Protein ${fmt(entry.nutrients.protein_g,1)} g · Carbs ${fmt(entry.nutrients.carbs_g,1)} g · Fat ${fmt(entry.nutrients.fat_g,1)} g · Fibre ${fmt(entry.nutrients.fiber_g,1)} g · Sugar ${fmt(entry.nutrients.sugar_g,1)} g · Sodium ${fmt(entry.nutrients.sodium_mg)} mg</small>` : ""}${cleanEstimateNotes(entry.estimateNotes) ? `<details class="diary-estimate-details"><summary>Estimated portion</summary><p data-i18n-skip>${esc(withoutSentencePeriods(cleanEstimateNotes(entry.estimateNotes)))}</p></details>` : ''}</div>
+      <div class="diary-entry-description"><strong data-i18n-skip>${esc(withoutTextDashes(entry.name))}</strong><small>${esc(MEALS.find(([key])=>key===entry.meal)[1])} · ${entry.source==='ai'?'Estimated nutrition':'Manual entry'}</small>${entry.nutrients ? `<small>Protein ${fmt(entry.nutrients.protein_g,1)} g · Carbs ${fmt(entry.nutrients.carbs_g,1)} g · Fat ${fmt(entry.nutrients.fat_g,1)} g · Fibre ${fmt(entry.nutrients.fiber_g,1)} g · Sugar ${fmt(entry.nutrients.sugar_g,1)} g · Sodium ${fmt(entry.nutrients.sodium_mg)} mg</small>` : ""}${cleanEstimateNotes(entry.estimateNotes) ? `<details class="diary-estimate-details"><summary>Estimated portion</summary><p data-i18n-skip>${esc(formatDisplayText(cleanEstimateNotes(entry.estimateNotes)))}</p></details>` : ''}</div>
       <div class="diary-entry-calories">${caloriesLabel(entry.calories)}<small> kcal</small>${renderDiaryConfidence(entry)}</div>
       <div class="diary-entry-actions"><button class="btn btn-sm diary-detail-button" type="button" data-analyse-diary="${esc(entry.id)}" aria-label="Detailed nutrition for ${esc(entry.name)}" aria-expanded="${expandedId===entry.id}" aria-controls="diary-nutrition-${esc(entry.id)}">Detailed nutrition</button><button class="icon-btn" type="button" data-edit-entry="${esc(entry.id)}" aria-label="Edit ${esc(entry.name)}" title="Edit entry">${ICONS.edit}</button><button class="icon-btn" type="button" data-remove-entry="${esc(entry.id)}" aria-label="Delete ${esc(entry.name)}" title="Delete entry">${ICONS.trash}</button></div>
       <section class="diary-nutrition" id="diary-nutrition-${esc(entry.id)}" data-diary-nutrition="${esc(entry.id)}" aria-label="Detailed nutrition for ${esc(entry.name)}" ${expandedId===entry.id?'':'hidden'}>

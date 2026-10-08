@@ -1,4 +1,4 @@
-import {withoutSentencePeriods} from "./interface-text.js";
+import {formatDisplayText,withoutTextDashes} from "./interface-text.js";
 import { foodPicture } from "./food-picture.js";
 import { getLocale } from "./i18n.js";
 import { cleanEstimateNotes } from "./estimate-notes.js";
@@ -141,12 +141,12 @@ export function renderResult(r, opts = {}) {
           <div class="num hide-sm">Fat</div><div class="num">Portion</div>
         </div>
         ${r.items.map((it) => `<div class="item">
-          <div class="name"><span data-i18n-skip>${esc(it.name)}</span>${it.sugar_g > 0 ? `<small>Sugar ${fmt(it.sugar_g, 1)} g · Fiber ${fmt(it.fiber_g, 1)} g</small>` : ""}</div>
+          <div class="name"><span data-i18n-skip>${esc(withoutTextDashes(it.name))}</span>${it.sugar_g > 0 ? `<small>Sugar ${fmt(it.sugar_g, 1)} g · Fiber ${fmt(it.fiber_g, 1)} g</small>` : ""}</div>
           <div class="num kcal">${fmt(it.calories)}</div>
           <div class="num hide-sm">${fmt(it.protein_g, 1)} g</div>
           <div class="num hide-sm">${fmt(it.carbs_g, 1)} g</div>
           <div class="num hide-sm">${fmt(it.fat_g, 1)} g</div>
-          <div class="num">${esc(withoutSentencePeriods(it.quantity || "—"))}</div>
+          <div class="num">${esc(formatDisplayText(it.quantity || "—"))}</div>
         </div>`).join("")}
       </div>`
     : "";
@@ -159,13 +159,13 @@ export function renderResult(r, opts = {}) {
   const swapsHtml = opts.showSwaps && r.swaps.length
     ? `<div class="section-title">Smart swaps</div>
        <div class="items">${r.swaps.map((s) => `<div class="item" style="grid-template-columns:1fr">
-          <div class="name" data-i18n-skip><span style="color:var(--text-3)">${esc(s.from)}</span> → <span style="color:var(--brand)">${esc(s.to)}</span>
-          ${s.why ? `<small>${esc(withoutSentencePeriods(s.why))}</small>` : ""}</div>
+          <div class="name" data-i18n-skip><span style="color:var(--text-3)">${esc(withoutTextDashes(s.from))}</span> → <span style="color:var(--brand)">${esc(withoutTextDashes(s.to))}</span>
+          ${s.why ? `<small>${esc(formatDisplayText(s.why))}</small>` : ""}</div>
         </div>`).join("")}</div>`
     : "";
 
   const allergensHtml = r.allergens.length
-    ? `<div class="badges" style="margin-top:14px">${r.allergens.map((a) => `<span class="badge warn" data-i18n-skip>⚠ ${esc(a)}</span>`).join("")}</div>`
+    ? `<div class="badges" style="margin-top:14px">${r.allergens.map((a) => `<span class="badge warn" data-i18n-skip>⚠ ${esc(withoutTextDashes(a))}</span>`).join("")}</div>`
     : "";
 
   const estimateBadge = opts.isEstimate
@@ -176,8 +176,8 @@ export function renderResult(r, opts = {}) {
     <div class="result-head">
       ${thumb}
       <div class="result-title">
-        <h2 data-i18n-skip>${esc(r.dish)}</h2>
-        <div class="sub" data-i18n-skip>${esc(withoutSentencePeriods(r.summary))}</div>
+        <h2 data-i18n-skip>${esc(withoutTextDashes(r.dish))}</h2>
+        <div class="sub" data-i18n-skip>${esc(formatDisplayText(r.summary))}</div>
         <div class="badges">
           ${estimateBadge}
           ${r.items.length ? `<span class="badge">${r.items.length} item${r.items.length === 1 ? "" : "s"}</span>` : ""}
@@ -189,7 +189,7 @@ export function renderResult(r, opts = {}) {
 
     <div class="total-row">
       <div class="total-kcal">${fmt(r.total.calories)}<span class="unit">kcal</span></div>
-      <div class="total-note">total estimated energy for the portion${r.portion_notes ? ` · <span data-i18n-skip>${esc(withoutSentencePeriods(r.portion_notes))}</span>` : ""}</div>
+      <div class="total-note">total estimated energy for the portion${r.portion_notes ? ` · <span data-i18n-skip>${esc(formatDisplayText(r.portion_notes))}</span>` : ""}</div>
     </div>
 
     <div class="macros">
@@ -219,13 +219,13 @@ export function renderResult(r, opts = {}) {
     <div class="score-card">
       <div class="gauge">${gauge(r.health_score)}</div>
       <div class="score-body">
-        <h3><span>${esc(r.health_label)}</span> · <span>Nutritional quality</span></h3>
-        <p data-i18n-skip>${esc(withoutSentencePeriods(r.health_summary || "Overall quality of this meal based on macro balance, fibre, sugar and sodium."))}</p>
-        ${notes.length ? `<ul class="notes">${notes.map((n) => `<li class="${n.kind}">${n.kind === "good" ? ICONS.check : ICONS.alert}<span data-i18n-skip>${esc(withoutSentencePeriods(n.text))}</span></li>`).join("")}</ul>` : ""}
+        <h3><span>${esc(withoutTextDashes(r.health_label))}</span> · <span>Nutritional quality</span></h3>
+        <p data-i18n-skip>${esc(formatDisplayText(r.health_summary || "Overall quality of this meal based on macro balance, fibre, sugar and sodium."))}</p>
+        ${notes.length ? `<ul class="notes">${notes.map((n) => `<li class="${n.kind}">${n.kind === "good" ? ICONS.check : ICONS.alert}<span data-i18n-skip>${esc(formatDisplayText(n.text))}</span></li>`).join("")}</ul>` : ""}
       </div>
     </div>
     ${swapsHtml}
-    ${cleanEstimateNotes(r.confidence_notes) ? `<div class="status-line" style="margin-top:16px">${ICONS.info}<span data-i18n-skip>${esc(withoutSentencePeriods(cleanEstimateNotes(r.confidence_notes)))}</span></div>` : ""}
+    ${cleanEstimateNotes(r.confidence_notes) ? `<div class="status-line" style="margin-top:16px">${ICONS.info}<span data-i18n-skip>${esc(formatDisplayText(cleanEstimateNotes(r.confidence_notes)))}</span></div>` : ""}
     ${opts.showActions!==false ? `<div class="result-actions" data-actions>
       <button class="btn btn-sm" type="button" data-action="analyse-again">${ICONS.spark} Analyse again</button>
       ${!r.meta?.demo ? `<button class="btn btn-primary btn-sm" data-action="log-diary">${ICONS.diary} Log to diary</button>` : ""}

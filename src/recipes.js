@@ -1,4 +1,4 @@
-import {withoutSentencePeriods} from "./interface-text.js";
+import {formatDisplayText,withoutTextDashes} from "./interface-text.js";
 /* ======================================================================
    NutriLens — Recipe Studio UI
    Generated ideas stay in memory until explicitly saved to this browser.
@@ -49,7 +49,7 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
 
   const lang = () => getSettings()?.language || "en";
   const tr = phrase => translate(phrase, lang());
-  const escAI = value => `<span data-i18n-skip>${esc(withoutSentencePeriods(value))}</span>`;
+  const escAI = value => `<span data-i18n-skip>${esc(formatDisplayText(value))}</span>`;
 
   function guideWasDismissed() {
     if (guideDismissedThisSession) return true;
@@ -66,9 +66,9 @@ export function initRecipeStudio({ getSettings, isProviderReady, openSettings, c
     const isSaved = !showingSaved && Boolean(findSavedRecipe(savedRecipes, recipe));
     const totalMinutes = recipe.prep_minutes + recipe.cook_minutes;
     const tags = recipe.tags.length
-      ? `<div class="recipe-tags">${recipe.tags.map(tag => `<span class="recipe-tag" data-i18n-skip>${esc(tag)}</span>`).join("")}</div>`
+      ? `<div class="recipe-tags">${recipe.tags.map(tag => `<span class="recipe-tag" data-i18n-skip>${esc(withoutTextDashes(tag))}</span>`).join("")}</div>`
       : "";
-    const ingredients = recipe.ingredients.map(ingredient => `<li>${ingredient.amount ? `<span class="recipe-ingredient-amount" data-i18n-skip>${esc(ingredient.amount)}</span> ` : ""}<span data-i18n-skip>${esc(ingredient.name)}</span></li>`).join("");    const steps = recipe.steps.map(step => `<li><span data-i18n-skip>${esc(withoutSentencePeriods(step))}</span></li>`).join("");
+    const ingredients = recipe.ingredients.map(ingredient => `<li>${ingredient.amount ? `<span class="recipe-ingredient-amount" data-i18n-skip>${esc(withoutTextDashes(ingredient.amount))}</span> ` : ""}<span data-i18n-skip>${esc(withoutTextDashes(ingredient.name))}</span></li>`).join("");    const steps = recipe.steps.map(step => `<li><span data-i18n-skip>${esc(formatDisplayText(step))}</span></li>`).join("");
     const swaps = recipe.swaps.length
       ? `<div class="recipe-swaps"><strong>${tr("Possible swaps")}:</strong> ${recipe.swaps.map(escAI).join(" · ")}</div>`
       : "";

@@ -1,4 +1,4 @@
-import {withoutSentencePeriods} from "./interface-text.js";
+import {formatDisplayText} from "./interface-text.js";
 import {LANGUAGES,normalizeLanguage,languageInfo} from './languages.js';
 import {TRANSLATIONS} from './translations.js';
 export {LANGUAGES,normalizeLanguage,languageInfo};
@@ -49,14 +49,14 @@ export function localizeDOM(target=root){
   while(walker.nextNode()){
     const node=walker.currentNode;
     if(!node.parentElement||node.parentElement.closest(skip+',textarea')||!node.nodeValue.trim())continue;
-    const saved=remember(node,'text',node.nodeValue),next=withoutSentencePeriods(translate(saved.source));
+    const saved=remember(node,'text',node.nodeValue),next=formatDisplayText(translate(saved.source));
     saved.translated=next;if(node.nodeValue!==next)node.nodeValue=next;
   }
   for(const element of [target,...target.querySelectorAll('*')]){
     if(element.closest(skip))continue;
     for(const name of attributes){
       if(!element.hasAttribute(name))continue;
-      const saved=remember(element,name,element.getAttribute(name)),next=withoutSentencePeriods(translate(saved.source));
+      const saved=remember(element,name,element.getAttribute(name)),next=formatDisplayText(translate(saved.source));
       saved.translated=next;if(element.getAttribute(name)!==next)element.setAttribute(name,next);
     }
   }

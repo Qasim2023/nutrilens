@@ -19,7 +19,8 @@ try {
   await context.addInitScript(() => {
     if (!localStorage.getItem('nutrilens.settings.v1')) localStorage.setItem('nutrilens.settings.v1', JSON.stringify({ connectionRevision: 3, baseUrl: 'https://recipes.example.test/v1', model: 'synthetic-recipes', auth: 'none', transport: 'direct', apiFormat: 'chat', language: 'en' }));
   });
-  const options = [recipe, { ...recipe, title: 'Spinach quinoa bowl' }, { ...recipe, title: 'Tomato <script>window.injected=true</script> soup' }];
+  const dashRecipe = {...recipe, description: 'Protein-rich — one-pot dinner.', tags: ['Protein-rich'], steps: ['Stir-in chickpeas — until warm.', ...recipe.steps.slice(1)], chef_tip: 'Serve warm - with lemon.'};
+  const options = [dashRecipe, { ...recipe, title: 'Spinach quinoa bowl' }, { ...recipe, title: 'Tomato <script>window.injected=true</script> soup' }];
   await context.route('https://recipes.example.test/**', route => {
     requests.push(route.request().postDataJSON());
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ choices: [{ message: { content: JSON.stringify({ recipes: options }) } }] }) });
@@ -57,12 +58,18 @@ try {
   assert.equal(requests.length, 1); assert.equal(requests[0].max_tokens, 8192);
   assert.equal(await page.evaluate(() => localStorage.getItem('nutrilens.recipes.v1')), null, 'generation is not auto-saved');
   assert.equal(await page.evaluate(() => window.injected), undefined, 'model HTML cannot execute');
+  assert.equal(await cards.first().locator('.recipe-card-description').textContent(), 'Protein rich one pot dinner');
+  assert.equal(await cards.first().locator('.recipe-tag').textContent(), 'Protein rich');
+  assert.ok((await cards.first().textContent()).includes('Stir in chickpeas until warm'));
+  assert.ok((await cards.first().textContent()).includes('Serve warm with lemon'));
   await page.locator('[data-recipe-action="save"][data-recipe-index="0"]').click();
   await waitCount(1);
   assert.equal(await page.locator('[data-recipe-action="save"][data-recipe-index="0"]').isDisabled(), true);
   const markdown = await exportText(page.locator('[data-recipe-action="export"][data-recipe-index="0"]'));
   assert.equal(markdown.filename, 'nutrilens-recipe-lemon-chickpea-bowl.md');
   assert.match(markdown.content, /## Ingredients/); assert.match(markdown.content, /Calories: 420 kcal/);
+  assert.match(markdown.content, /Protein-rich — one-pot dinner\./, 'exports preserve original prose');
+  assert.match(markdown.content, /Stir-in chickpeas — until warm\./);
   assert.match(markdown.content, /Allergy safety and cross-contact cannot be guaranteed/);
   await page.locator('[data-recipe-action="save"][data-recipe-index="1"]').click();
   await waitCount(2); await page.locator('#recipe-show-saved').click();
