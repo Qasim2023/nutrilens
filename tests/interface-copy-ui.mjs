@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createAppServer} from '../server.mjs';
 import {LANGUAGES} from '../src/languages.js';
+import {HOSTED_PROVIDER_BASE_URL} from '../src/hosted-provider.js';
+const providerBrand=new URL(HOSTED_PROVIDER_BASE_URL).hostname.split('.')[1];
+const removedBranding=new RegExp(providerBrand+'|vercel|Hosted website mode|Use your own API key\\. Never put an API key','i');
 const {chromium}=createRequire(import.meta.url)(process.argv[2]||'playwright');
 const app=createAppServer();await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));
 let browser;
@@ -25,10 +28,10 @@ try{
   const assertCopy=async()=>{
     const text=await page.evaluate(()=>document.body.textContent);
     assert.doesNotMatch(text,/\b(?:AI|KI|IA)\b|ИИ|OpenAI|xAI|Bring your own API/);
-    assert.doesNotMatch(text,/wikivibe|vercel|Hosted website mode|Use your own API key\. Never put an API key/i);
+    assert.doesNotMatch(text,removedBranding);
     const attrs=await page.evaluate(()=>[...document.querySelectorAll('[title],[aria-label],[placeholder]')].flatMap(el=>['title','aria-label','placeholder'].map(attr=>el.getAttribute(attr)||'')).join('\n'));
     assert.doesNotMatch(attrs,/\bAI\b|Bring your own API/);
-    assert.doesNotMatch(attrs,/wikivibe|vercel|Hosted website mode/i);
+    assert.doesNotMatch(attrs,removedBranding);
     const dashIssues=await page.evaluate(async()=>{
       const {withoutTextDashes}=await import('/src/interface-text.js');
       const skip='script,style,code,pre,svg,kbd,#available-models,#model-options,#endpoint-preview,#provider-hint,.brand-name,#result .badges [data-i18n-skip],.diary-nutrition .badges [data-i18n-skip],.library-meal-description small [data-i18n-skip]';
@@ -52,7 +55,7 @@ try{
   assert.equal(await page.locator('.hero-chips .chip').count(),3);await assertCopy();
   await page.locator('#settings-btn').click();
   assert.equal(await page.locator('#static-hosting-notice').count(),0);
-  assert.equal(await page.locator('#set-provider option[value="wikivibe"]').count(),0);
+  assert.equal(await page.locator(`#set-provider option[value="${providerBrand}"]`).count(),0);
   for(const language of LANGUAGES){
     await page.locator('#set-language').selectOption(language.code);
     await page.waitForFunction(code=>document.documentElement.lang===code,language.code);

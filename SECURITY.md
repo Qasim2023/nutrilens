@@ -3,7 +3,7 @@
 ## Scope and limits
 
 NutriLens is a browser application with an optional loopback-only local relay
-and a provider-restricted WikiVibe Vercel function. There are no accounts, password database, SQL queries,
+and a provider-restricted hosted function. There are no accounts, password database, SQL queries,
 or shared production API keys. These protections are defense in depth, not a
 claim that the app is attack-proof or an audited medical-data vault.
 
@@ -145,7 +145,7 @@ than posting keys, personal meals, photos or exploitable details in a public iss
 Revoke exposed provider keys immediately. No dedicated reporting address has
 been configured yet; establish one before public launch.
 
-## WikiVibe hosted function
+## Restricted hosted function
 
 See VERCEL.md for the fixed-target/route restrictions, Bearer-key requirement,
 same-origin browser defenses, no-store response policy, 4 MiB size limits,

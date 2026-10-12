@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import {LANGUAGES} from '../src/languages.js';
 import {TRANSLATIONS} from '../src/translations.js';
 import {translate} from '../src/i18n.js';
+import {HOSTED_PROVIDER_BASE_URL} from '../src/hosted-provider.js';
+const providerBrand=new URL(HOSTED_PROVIDER_BASE_URL).hostname.split('.')[1];
 const intro='Attach a photo or describe your meal. NutriLens breaks it down into calories, macros, micronutrients and a health score.';
 test('page title, branding, hero and diary placeholder use the requested wording',()=>{
   const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
@@ -70,7 +72,7 @@ test('interface wording omits the removed badge and engine references while reta
 
 
 test('settings, privacy, provider presets and connection messages omit removed branding and notice',async()=>{
-  const removed=/wikivibe|vercel|Hosted website mode|Use your own API key\. Never put an API key/i;
+  const removed=new RegExp(providerBrand+'|vercel|Hosted website mode|Use your own API key\\. Never put an API key','i');
   const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
   const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
   assert.doesNotMatch(html,removed);
@@ -81,7 +83,7 @@ test('settings, privacy, provider presets and connection messages omit removed b
   const providerSelect=html.match(/<select[^>]*id="set-provider"[^>]*>([\s\S]*?)<\/select>/)[1];
   const optionIds=[...providerSelect.matchAll(/<option value="([^"]+)"/g)].map(match=>match[1]);
   assert.deepEqual(optionIds,Object.keys(PRESETS));
-  assert.equal(Object.hasOwn(PRESETS,'wikivibe'),false);
+  assert.equal(Object.hasOwn(PRESETS,providerBrand),false);
   for(const preset of Object.values(PRESETS))assert.doesNotMatch(preset.label,removed);
   for(const file of ['connection.js','hosted-provider.js']){
     const source=readFileSync(new URL('../src/'+file,import.meta.url),'utf8');
@@ -97,7 +99,7 @@ test('retired provider presets migrate to Custom without resetting the visitor c
   const memory=()=>{const data=new Map();return{getItem:key=>data.get(key)??null,setItem:(key,value)=>data.set(key,String(value)),removeItem:key=>data.delete(key)};};
   globalThis.localStorage=memory();globalThis.sessionStorage=memory();globalThis.location={hostname:'localhost',protocol:'http:'};
   try{
-    const connection={provider:'wikivibe',baseUrl:'https://api.wikivibe.dev/v1',model:'visitor-model',auth:'bearer',apiKey:'synthetic-visitor-key',extraHeaders:'',theme:'light'};
+    const connection={provider:providerBrand,baseUrl:HOSTED_PROVIDER_BASE_URL,model:'visitor-model',auth:'bearer',apiKey:'synthetic-visitor-key',extraHeaders:'',theme:'light'};
     localStorage.setItem('nutrilens.settings.v1',JSON.stringify(connection));
     const {loadSettings}=await import('../src/store.js?retired-provider-copy');
     const settings=loadSettings();

@@ -82,7 +82,7 @@ test('Vercel browser artifact excludes personal files and relay implementation',
     const artifact = await buildPages({outputDirectory:path.join(temp,'site'),hostedRelay:true});
     assert.ok((await checkPublicContent(artifact)).checked > 10);
     assert.match(await fs.readFile(path.join(artifact.output,'src/hosting-config.js'),'utf8'),/HOSTED_RELAY = true/);
-    assert.equal(artifact.files.includes('api/wikivibe.js'),false);
+    assert.equal(artifact.files.includes('api/provider.js'),false);
     assert.equal(artifact.files.some(name=>/^(artifacts|tests|server|desktop|release|\.git|\.env|\.vercel)(\/|\.|$)/.test(name)),false);
     for (const file of ['vercel.json','README.md','package.json','pnpm-lock.yaml']) assert.equal(artifact.files.includes(file),false);
     await fs.writeFile(path.join(artifact.output,'src/hosting-config.js'),'export const apiKey = "";\nconst config = {apiKey: "synthetic-private-key"};');

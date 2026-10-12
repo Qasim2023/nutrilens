@@ -11,13 +11,13 @@
 3. **Do not set a provider API key in source code or Vercel environment variables.**
    Every visitor brings their own key. No shared provider secret is configured.
 4. The build runs regression tests and scans the published browser assets.
-   Vercel also deploys the root `api/wikivibe.js` function and its traced imports.
+   Vercel also deploys the root `api/provider.js` function and its traced imports.
    Do not deploy only `dist` manually if you need the hosted relay.
-5. After deployment, open Settings, select **WikiVibe**, enter your own provider
-   key, fetch available models, select a model and test the connection. Existing
-   Custom settings using `https://api.wikivibe.dev/v1` automatically use the relay.
+5. After deployment, open Settings, select **Custom**, enter your provider endpoint
+   and key, fetch available models, select a model and test the connection. The
+   supported endpoint in `src/hosted-provider.js` automatically uses the relay.
    Use Bearer authentication and leave Extra headers empty for this route.
-6. Verify **Connection method: Vercel relay**. This works on Vercel custom domains
+6. Verify **Connection method: Hosted relay**. This works on Vercel custom domains
    as well as preview/production domains. Other providers still use Direct mode.
 
 ## What gets deployed
@@ -30,30 +30,30 @@ are not published as browser assets. Vercel deploys the function separately.
 The local `/api/relay` remains loopback-only and is never exposed in production.
 Netlify/Pages builds remain static-only and do not deploy the Vercel function.
 
-New visitors still receive blank endpoint/model/key fields. WikiVibe is an
-optional public provider preset, not an account or embedded credential. Existing
+New visitors still receive blank endpoint/model/key fields. Public provider
+presets are optional conveniences without embedded credentials. Existing
 visitor preferences are preserved; migrations do not replace their endpoint.
 Manual diary logging remains available without a key.
 
 ## Restricted hosted relay and privacy
 
-The browser posts to same-origin `/api/wikivibe`; the function sends the request
-server-to-server only to `https://api.wikivibe.dev`. Supported provider routes:
+The browser posts to same-origin `/api/provider`; the function sends the request
+server-to-server only to the fixed origin in `src/hosted-provider.js`. Supported provider routes:
 `GET /v1/models`, `POST /v1/chat/completions`, `POST /v1/responses`.
 Provider browser CORS permission is not required for this relay path. Other
 providers still need HTTPS/browser CORS for direct requests.
 
-A visitor-owned Bearer key is mandatory on every call. WikiVibe authenticates
+A visitor-owned Bearer key is mandatory on every call. The provider authenticates
 that key and applies its billing/data policies. The app has no user accounts and
 this is not independent site-login authentication. Same-origin Origin/Fetch
 Metadata and a custom header defend against browser CSRF, not arbitrary clients.
 No target URL, arbitrary provider headers, upstream cookies, redirects or shared
 key are forwarded. Same-origin site cookies can reach Vercel for deployment
-protection, but are never forwarded to WikiVibe. Responses requests force `store:false`; provider logging/retention
+protection, but are never forwarded to the provider. Responses requests force `store:false`; provider logging/retention
 cannot be controlled by this app.
 
 Keys and submitted food descriptions/photos/recipe text pass through Vercel and
-then to WikiVibe. The function does not intentionally log or persist raw keys,
+then to the provider. The function does not intentionally log or persist raw keys,
 requests or responses, and API responses prohibit browser/CDN caching. Its
 per-key rate limiter holds only short-lived SHA-256 hashes in instance memory.
 Browser keys remain in localStorage so they survive refreshes and browser restarts; browser extensions, XSS and someone controlling the browser profile can still expose them.
@@ -74,7 +74,7 @@ invocations. Do not describe these limits as comprehensive authentication or
 production-wide rate limiting.
 
 Before promoting a public site, configure supported Vercel Firewall/WAF rate
-limits for `/api/wikivibe`, monitor usage/spend, and use provider spend caps.
+limits for `/api/provider`, monitor usage/spend, and use provider spend caps.
 For a private site, enable deployment protection/site-access controls. For a
 larger public service, add real user authentication and distributed rate limiting
 before expanding the relay beyond this fixed provider. Never add an unrestricted
@@ -83,7 +83,7 @@ arbitrary-URL proxy to avoid CORS.
 ## Live checks and local verification
 
 - Fresh visitors have no key, selected model or personal meals/history.
-- WikiVibe model discovery/test/photo/text analysis use `/api/wikivibe`, not a
+- Supported hosted model discovery/test/photo/text analysis use `/api/provider`, not a
   direct browser request to the provider. Test with your own key; do not share it.
 - The hosted function rejects missing keys, cross-origin requests and other URLs.
 - API responses have `Cache-Control: no-store` and no permissive CORS headers.

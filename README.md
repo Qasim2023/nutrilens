@@ -19,7 +19,7 @@ Open `http://localhost:5173/`. To use another port: `node server.mjs 8080`.
 The app ships with no API key, account, default endpoint or selected model. Each visitor must configure their own connection. Public provider presets are optional conveniences, not shared credentials.
 
 1. Open **Settings**. Choose a provider preset or enter your own API URL, then enter your own key in the masked field.
-2. On Vercel, WikiVibe automatically uses **Vercel relay**; other providers use **Direct browser requests** and must allow CORS. Local development can use the loopback relay.
+2. The hosted site automatically uses **Hosted relay** for the supported endpoint; other providers use **Direct browser requests** and must allow CORS. Local development can use the loopback relay.
 3. Click **Fetch available models**, then choose an actual model ID from the dropdown.
 4. Click **Test connection**. This sends a small prompt and may consume provider quota.
 5. Attach a photo and/or describe food, then click **Analyse**. Use a vision-capable model for photos.
@@ -91,7 +91,7 @@ node server.mjs
 
 Use an origin, not a full API path. Multiple origins can be comma-separated. Do not trust unrecognized hosts or metadata/internal-service addresses. Alternatively use **Direct browser requests** if that provider allows CORS.
 
-On Vercel, the fixed-provider WikiVibe function is available; keys and submitted food pass through Vercel before reaching WikiVibe. Other static providers use Direct mode and require browser CORS. The loopback relay remains local-only and must never be exposed publicly.
+On Vercel, the restricted hosted relay is available; keys and submitted food pass through the hosting service before reaching the configured provider. Other static providers use Direct mode and require browser CORS. The loopback relay remains local-only and must never be exposed publicly.
 
 ## Features
 
@@ -185,7 +185,7 @@ pnpm install --frozen-lockfile
 pnpm run build:vercel
 ```
 
-Do not add your provider API key to Vercel environment variables or the repository. Every visitor enters their own API key and model. Select WikiVibe to use the restricted Vercel relay for https://api.wikivibe.dev/v1 without provider browser CORS. Other providers still need HTTPS/CORS for direct requests. The hosted site has no shared provider API credentials; manual diary entries still work without AI. Local screenshots, meal backups and verification artifacts are excluded from Git.
+Do not add your provider API key to Vercel environment variables or the repository. Every visitor enters their own API key and model. Choose Custom and enter your provider endpoint; supported connections automatically use the restricted hosted relay without provider browser CORS. Other providers still need HTTPS/CORS for direct requests. The hosted site has no shared provider API credentials; manual diary entries still work without AI. Local screenshots, meal backups and verification artifacts are excluded from Git.
 
 ## Deploy to Netlify for personal use
 

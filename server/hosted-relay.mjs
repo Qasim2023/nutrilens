@@ -2,7 +2,7 @@
 // Origin checks are CSRF protection, not identity authentication. The upstream
 // authenticates each visitor's key. Add edge/WAF limits for public deployments.
 import {createHash} from 'node:crypto';
-import {HOSTED_ROUTES, WIKIVIBE_BASE_URL} from '../src/hosted-provider.js';
+import {HOSTED_ROUTES, HOSTED_PROVIDER_BASE_URL} from '../src/hosted-provider.js';
 export const MAX_HOSTED_REQUEST_BYTES = 4 * 1024 * 1024;
 export const MAX_HOSTED_RESPONSE_BYTES = 4 * 1024 * 1024;
 
@@ -94,7 +94,7 @@ export function createHostedRelay({fetchImpl=globalThis.fetch,now=Date.now,perKe
     const onClose=()=>{if(!res.writableEnded)abort.abort();};res.on('close',onClose);
     try {
       const envelope=validateEnvelope(await readEnvelope(req));
-      const target=new URL(WIKIVIBE_BASE_URL);target.pathname=envelope.path;
+      const target=new URL(HOSTED_PROVIDER_BASE_URL);target.pathname=envelope.path;
       // Only this fixed host and the client's Bearer key are forwarded. No cookies,
       // arbitrary URLs, custom headers, request logs, shared secrets or redirects.
       const upstream=await fetchImpl(target.toString(),{method:envelope.method,headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},body:envelope.method==='POST'?JSON.stringify(envelope.body):undefined,redirect:'error',credentials:'omit',signal});

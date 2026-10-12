@@ -20,5 +20,5 @@ if (code !== 0) {
   const artifact = await buildPages({hostedRelay:true});
   const {checked} = await checkPublicContent(artifact);
   console.log(`Vercel static build ready (${artifact.files.length} allowlisted files; ${checked} first-party privacy checks).`);
-  console.log('Browser assets contain no credentials or personal data. Vercel separately deploys the provider-restricted api/wikivibe.js function.');
+  console.log('Browser assets contain no credentials or personal data. Vercel separately deploys the provider-restricted api/provider.js function.');
 }
