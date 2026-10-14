@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "mammoth": "^1.13.0",
-    "pdfjs-dist": "^6.3.289"
+    "pdfjs-dist": "^6.4.299"
   },
   "devDependencies": {
     "electron": "44.5.1",
