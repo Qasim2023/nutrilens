@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "electron": "44.5.1",
-    "electron-builder": "26.15.3",
+    "electron-builder": "26.18.0",
     "fake-indexeddb": "^6.2.5"
   },
   "main": "desktop/main.mjs",
